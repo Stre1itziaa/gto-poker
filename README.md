@@ -6,6 +6,8 @@
 [![Play Online](https://img.shields.io/badge/Play%20Online-GitHub%20Pages-blue)](https://stre1itziaa.github.io/gto-poker/)
 ![Version](https://img.shields.io/badge/version-v0.9-green)
 
+> **English**: A pure-frontend, **zero-dependency** No-Limit Texas Hold'em **GTO trainer** — five GTO bots with explainable decisions (modeled ranges, Monte-Carlo equity, balanced bet sizing, mixed strategies), a real-time coach panel (equity vs modeled ranges, pot odds, MDF), P2P friend-room multiplayer via PeerJS, anime character progression, and a cross-verified Chinese GTO theory library. **[Play online](https://stre1itziaa.github.io/gto-poker/)** — no install, no build step, just open the page.
+
 | 大厅 | 对局 · GTO 教练 | 数据分析 |
 |---|---|---|
 | ![大厅](docs/dev/screenshots/1_大厅.png) | ![对局](docs/dev/screenshots/6_对局_翻牌后.png) | ![数据](docs/dev/screenshots/8_数据页.png) |
