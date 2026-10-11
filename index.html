@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>GTO 德州扑克 · 夜樱扑克部</title>
+<link rel="stylesheet" href="css/style.css?v=20261003b">
+<link rel="stylesheet" href="css/characters.css?v=20261003c">
+<link rel="stylesheet" href="css/portraits.css?v=20260925">
+<link rel="stylesheet" href="css/theme-night-sakura.css?v=20260925">
+<link rel="stylesheet" href="css/landing.css?v=20261003d">
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand">♠ 夜樱扑克部 <span class="sub">GTO 训练</span></div>
+    <div class="meta" id="hand-info">—</div>
+    <div class="meta" id="session-stats" title="本会话=本次进入后的统计（回大厅会清零）· VPIP=翻牌前入池率 · PFR=翻牌前加注率 · 全量累计见「数据分析」页">累计 0 手 · 盈亏 0.0bb · VPIP — / PFR —</div>
+    <div class="controls">
+      <label class="toggle" id="coach-toggle-label"><input type="checkbox" id="coach-toggle" checked> GTO 教练</label>
+      <label class="toggle" title="多人局：自动向房主请求下一局"><input type="checkbox" id="auto-next"> 自动下一局</label>
+      <button id="btn-home" class="ghost"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg> 大厅</button>
+      <button id="btn-restart" class="ghost">↻ 重新开局</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="table-wrap">
+      <div id="petals" class="petals" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div id="table-felt">
+        <div id="board"></div>
+        <div id="pot"></div>
+      </div>
+      <div id="seats"></div>
+    </div>
+
+    <aside id="side">
+      <section id="portrait-panel" class="panel"></section>
+      <section id="coach" class="panel">
+        <h3>GTO 教练</h3>
+        <div id="coach-body" class="muted">轮到你行动时，这里会给出基于范围与频率的建议。</div>
+      </section>
+      <section id="logpanel" class="panel">
+        <h3>牌局日志</h3>
+        <div id="log"></div>
+      </section>
+    </aside>
+  </main>
+
+  <footer id="actionbar">
+    <div id="action-hint"></div>
+    <div id="action-controls" class="hidden">
+      <button id="btn-fold" class="fold">弃牌</button>
+      <button id="btn-checkcall" class="call">过牌</button>
+      <button id="btn-raise" class="raise">加注到 60</button>
+      <button id="raise-tune" type="button" title="展开/收起自定义下注面板（滑条+快捷档）">自定义 ▾</button>
+      <div id="raise-box">
+        <input type="range" id="raise-slider" min="0" max="100" step="10" aria-label="加注额">
+        <div id="presets"></div>
+      </div>
+    </div>
+    <span id="turn-clock" style="display:none"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="15.5"></circle><circle class="ring-fg" id="turn-ring-fg" cx="18" cy="18" r="15.5"></circle></svg><b id="turn-clock-num"></b></span>
+  </footer>
+
+  <div id="emote-strip" class="hidden" aria-label="快捷表情"></div>
+
+  <div id="overlay" class="hidden">
+    <div id="overlay-card">
+      <h2 id="overlay-title">本局结果</h2>
+      <div id="overlay-body"></div>
+      <button id="btn-next" class="primary">下一局 ▶ <span class="khint">空格</span></button>
+      <label class="toggle inline" title="多人局：自动向房主请求下一局"><input type="checkbox" id="auto-next-2"> 自动继续</label>
+    </div>
+  </div>
+
+  <!-- ==================== 大厅首页（雀魂式：角色舞台 + 模式导航） ==================== -->
+  <div id="landing">
+    <div id="lobby-backdrop" aria-hidden="true"></div>
+    <div class="petals" id="landing-petals" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+
+    <header id="lobby-topbar">
+      <div class="lb-logo">🌸 夜樱扑克部</div>
+      <div class="lb-right">
+        <div class="lb-stats" id="lobby-stats"></div>
+        <div class="lb-player" id="lobby-player"></div>
+      </div>
+    </header>
+
+    <div id="lobby-main">
+      <section id="lobby-stage" aria-label="角色展示">
+        <div id="stage-portrait"></div>
+        <div id="stage-plate"></div>
+      </section>
+
+      <aside id="lobby-side">
+        <p class="tagline">今夜，樱与筹码齐落。</p>
+        <div class="mode-cards">
+          <div class="mode-card mc-primary" id="mc-train" tabindex="0" role="button" aria-label="开始对局，进入 GTO 训练牌桌">
+            <div class="mc-body">
+              <div class="mc-title">▶ 开始对局</div>
+              <div class="mc-desc">与部员对打 · GTO 教练实时建议</div>
+            </div>
+          </div>
+          <div class="mode-card" id="mc-multi" tabindex="0">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#7fa8ff" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 2.6 4 5.6 4 9s-1.2 6.4-4 9c-2.8-2.6-4-5.6-4-9s1.2-6.4 4-9z"/></svg></div>
+            <div class="mc-body">
+              <div class="mc-title">好友房</div>
+              <div class="mc-desc">P2P 真人对打 · 房码制 · 空位部员补齐</div>
+            </div>
+            <span class="mc-go">▶</span>
+          </div>
+          <div class="mode-card" id="mc-data" tabindex="0">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#9aa3c7" stroke-width="1.6" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-8M21 20H3"/></svg></div>
+            <div class="mc-body">
+              <div class="mc-title">数据分析</div>
+              <div class="mc-desc">盈亏曲线 · 对手倾向 · 牌谱逐手回看</div>
+            </div>
+            <span class="mc-go">▶</span>
+          </div>
+        </div>
+        <div id="lobby-seats" class="opt-row" aria-label="桌型"></div>
+        <button id="lobby-lib" class="ghost" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4a2 2 0 0 1 2 2c0 1.1-.9 1.6-1.5 2.1L20 12.6v1.2H4v-1.2l7.5-4.5C10.9 7.6 10 7.1 10 6a2 2 0 0 1 2-2z"/><path d="M4 17h16"/></svg> 角色库 · 看板娘与服装</button>
+        <button id="lobby-book" class="ghost" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v12"/><path d="M4 5.5h5A3 3 0 0 1 12 7a3 3 0 0 1 3-1.5h5v12h-5A3 3 0 0 0 12 19a3 3 0 0 0-3-1.5H4z"/></svg> 图鉴 · 服装收集</button>
+        <div class="landing-foot">
+          <span class="muted">理论支撑 <code>docs/theory/01~07</code> · 立绘为原创 AI 生成</span>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ==================== 选人 + 设置弹窗 ==================== -->
+  <div id="start-modal" class="hidden">
+    <div id="start-card">
+      <h1>🌸 选择角色 <span style="font-size:14px;color:var(--muted)">· 其余由 GTO 部员扮演</span></h1>
+      <div class="pick-layout">
+        <div class="pick-left">
+          <div class="opt-row"><b>选择角色</b><span class="muted" style="margin-left:8px">点击头像更换</span></div>
+          <div id="char-grid" class="char-grid"></div>
+          <div class="opt-row" id="costume-row" hidden><b>服装：</b></div>
+          <div class="opt-row">
+            <span>桌型：</span>
+            <label><input type="radio" name="seats" value="6" checked> 6 人桌</label>
+            <label><input type="radio" name="seats" value="4"> 4 人桌</label>
+            <label><input type="radio" name="seats" value="2"> 单挑</label>
+          </div>
+          <div class="opt-row">
+            <span>规则：无限注德州 · 盲注 10/20 · 100bb · 打光才重新买入</span>
+          </div>
+          <button id="btn-start" class="primary big">开始牌局 ▶</button>
+        </div>
+        <div class="pick-right" id="char-preview"></div>
+      </div>
+      <p class="foot">理论支撑见知识库 <code>docs/theory/01~07</code> · 决策引擎 <code>js/gto.js</code></p>
+    </div>
+  </div>
+
+  <!-- ==================== 多人好友房 ==================== -->
+  <div id="multi-modal" class="hidden">
+    <div id="start-card">
+      <h1><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#ff9ec7" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-3px"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 2.6 4 5.6 4 9s-1.2 6.4-4 9c-2.8-2.6-4-5.6-4-9s1.2-6.4 4-9z"/></svg> 好友房 <span style="font-size:14px;color:var(--muted)">· P2P 直连 · 空位 GTO 部员补齐</span></h1>
+      <div id="mp-setup">
+        <div class="mp-row"><b>昵称</b><input id="mp-name" class="mp-input" maxlength="8" placeholder="最多 8 个字"></div>
+        <div class="mp-tabs">
+          <button id="mp-tab-host" class="mp-tab sel" type="button"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg> 创建房间</button>
+          <button id="mp-tab-join" class="mp-tab" type="button"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M14 3h5a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-5"/><path d="M10 17l5-5-5-5M15 12H3"/></svg> 加入房间</button>
+        </div>
+        <div id="mp-pane-host">
+          <div class="mp-row">
+            <span>桌型：</span>
+            <label><input type="radio" name="mp-seats" value="6" checked> 6 人桌</label>
+            <label><input type="radio" name="mp-seats" value="4"> 4 人桌</label>
+            <label><input type="radio" name="mp-seats" value="2"> 单挑</label>
+          </div>
+          <button id="mp-btn-create" class="primary big" type="button">创建房间 ✦</button>
+        </div>
+        <div id="mp-pane-join" hidden>
+          <div class="mp-row"><b>房码</b><input id="mp-code" class="mp-input mp-code" maxlength="6" placeholder="6 位房码" autocomplete="off"></div>
+          <button id="mp-btn-join" class="primary big" type="button">加入房间 ✈</button>
+        </div>
+        <div id="mp-status" class="muted" style="margin-top:10px;min-height:18px"></div>
+      </div>
+      <div id="mp-lobby" hidden>
+        <div class="mp-row" style="justify-content:center;gap:16px">
+          <div style="text-align:center">
+            <div class="muted" style="font-size:12px">房间码（发给朋友）</div>
+            <div id="mp-room-code">------</div>
+          </div>
+          <button id="mp-copy-code" class="ghost" type="button">复制</button>
+        </div>
+        <div id="mp-players" class="mp-players"></div>
+        <div id="mp-lobby-status"></div>
+        <div class="muted" style="font-size:12px;text-align:center;margin-top:4px">多人局为公平起见不提供 GTO 教练——靠自己的范围打。</div>
+        <div class="muted" style="font-size:12px;text-align:center">空位自动由 GTO 部员补齐 · 最多 <span id="mp-seat-hint">6</span> 人</div>
+        <div class="mp-row" style="justify-content:center;margin-top:14px">
+          <button id="mp-btn-start" class="primary big" type="button">开始牌局 ▶</button>
+          <button id="mp-btn-ready" class="primary big" type="button" hidden>准备 ✔</button>
+          <button id="mp-btn-leave" class="ghost big" type="button">离开房间</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 数据分析（占位） ==================== -->
+  <div id="data-modal" class="hidden">
+    <div id="start-card">
+      <h1><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#ff9ec7" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-3px"><path d="M4 20V10M10 20V4M16 20v-8M21 20H3"/></svg> 数据分析 <span style="font-size:14px;color:var(--muted)">· 本机记录 · 不上传</span></h1>
+      <div id="data-body"><p class="lead">正在载入牌谱…</p></div>
+      <button id="btn-data-back" class="primary big">返回大厅</button>
+    </div>
+  </div>
+
+  <script src="js/cards.js?v=20260918"></script>
+  <script src="js/ranges.js?v=20260918"></script>
+  <script src="js/equity.js?v=20260918"></script>
+  <script src="js/engine.js?v=20261003cf"></script>
+  <script src="js/gto.js?v=20260918"></script>
+  <script src="js/portraits.js?v=20260925g"></script>
+  <script src="js/affection.js?v=20261003"></script>
+  <script src="js/lobby.js?v=20261003c"></script>
+  <script src="js/audio.js?v=20261002"></script>
+  <script src="js/vendor/peerjs.min.js"></script>   <!-- S5：自托管，消除 unpkg 供应链与可用性风险 -->
+  <script src="js/net.js?v=20260925b"></script>
+  <script src="js/data.js?v=20261003"></script>
+  <script src="js/ui.js?v=20261003s"></script>
+  <script src="js/mp.js?v=20260925b"></script>
+  <script src="js/anti-addiction.js?v=20261002"></script>
+  <script src="js/main.js?v=20261003e"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+/* theme-night-sakura.css — 夜樱主题（唯一视觉，2026-09-17 起 casino 主题已删除）
+ * 原则：只覆盖 design tokens（CSS 自定义属性）与少量硬编码色，
+ * 不改动任何布局规则——主题切换与布局解耦（详见 anime-restyle/02-round2-plan.md §4）。
+ */
+
+:root {
+  /* —— 调色板 tokens（60-30-10：夜蓝主底 60% / 蓝紫面板 30% / 樱粉点缀 10%） —— */
+  --bg: #12172b;            /* 主底：夜樱深蓝 */
+  --panel: #1a2140;         /* 面板：蓝紫 */
+  --line: #303c66;          /* 分割线 */
+  --gold: #ff9ec7;          /* 主强调：樱粉（替代赌场金） */
+  --winner-color: #f5c96b;  /* 赢家专用金（R5-施工 P2-14：变量化，换主题只改这里） */
+  --text: #f2f0fa;
+  --muted: #9aa3c7;
+  --red: #e8607f;
+  --green: #5fd4a3;
+  --blue: #7fa8ff;
+
+  /* —— 牌桌：夜樱绒面 —— */
+  --felt1: #47538f;
+  --felt2: #262e56;
+
+  /* —— 卡通渲染 tokens（アニメ塗规则，见 R2 §3） —— */
+  --toon-line: #2c2540;     /* 线色＝深紫棕，禁用纯黑（色トレス惯例） */
+  --card-face: #fffdf6;     /* 和纸奶油白 */
+  --card-border: #e7c6d4;   /* 卡面描边＝樱粉浅线 */
+  --suit-red: #e8455f;      /* 红花色＝朱红 */
+  --suit-black: #2f2a52;    /* 黑花色＝深靛(A7: 拉大红黑亮度差) */
+}
+
+/* —— 全局：圆体气质字体栈（本地有则生效，无则回退黑体） —— */
+body {
+  font-family: "Yu Gothic UI", "Hiragino Maru Gothic ProN", "LXGW WenKai",
+               "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  background:
+    radial-gradient(1100px 560px at 50% -12%, #2c3363 0%, transparent 60%),
+    var(--bg);
+}
+
+/* —— 顶栏 / 面板：统一蓝紫 + 樱粉描边 —— */
+#topbar { border-bottom-color: var(--line); }
+#topbar .brand { color: var(--gold); }
+
+/* —— 牌桌：樱木包边 + 夜樱绒面 —— */
+#table-felt {
+  border-color: #8a679e;
+  box-shadow:
+    inset 0 0 60px rgba(10, 12, 32, .55),
+    0 10px 40px rgba(0, 0, 0, .5),
+    0 0 0 1px rgba(255, 158, 199, .25);
+}
+#pot {
+  background: rgba(6, 10, 28, .72);
+  border-color: rgba(255, 158, 199, .55);
+  color: #ffd3e3;
+}
+
+/* —— 座位面板 —— */
+.seat {
+  background: rgba(15, 21, 45, .9);
+  border-color: var(--line);
+  border-width: 2px;                    /* 描边加重＝卡通轮廓 */
+  border-radius: 14px;                  /* 圆角化＝「软」形语言 */
+}
+.seat.active { border-color: var(--gold); box-shadow: 0 0 18px rgba(255, 158, 199, .4); }
+/* 赢家色系统一：桌面座位与弹层池行同为金色（R4 反馈：绿金双色系） */
+.seat.winner { border-color: var(--winner-color); box-shadow: 0 0 16px rgba(245, 201, 107, .5); }
+.seat .win-amt { color: #f5c96b; }
+
+/* —— 扑克牌：和纸卡面 + 樱粉卡背 —— */
+.card {
+  background: var(--card-face);
+  border: 2px solid var(--card-border);
+  border-radius: 10px;
+  box-shadow: 0 3px 8px rgba(6, 8, 24, .5);
+}
+.card.red   { color: var(--suit-red); }
+.card.black { color: var(--suit-black); }
+.card.back {
+  background: repeating-linear-gradient(45deg, #ff9ec7 0 7px, #f27fae 7px 14px);
+  border-color: #d76d9d;
+}
+.card.back::after { content: "♥"; color: rgba(255, 255, 255, .55); }
+
+/* —— 按钮：描边卡通化（外轮廓 2px、圆角全开） —— */
+button { border-width: 2px; border-radius: 12px; }
+#action-controls .fold { border-color: var(--red); color: #ffa9be; }
+#action-controls .call { border-color: var(--green); color: #a7ecd0; }
+#action-controls .raise { border-color: var(--gold); color: var(--gold); }
+button.primary { color: #4a1f35; }
+
+/* —— 日志 / 教练面板 —— */
+#log .street { color: var(--gold); }
+#coach-body .suggest {
+  border-color: var(--gold);
+  background: rgba(255, 158, 199, .1);
+}
+#coach-body .bar { background: #232b52; }
+#coach-body .bar i { background: linear-gradient(90deg, #ff9ec7, #ffd3e3); }
+
+/* —— 弹窗 —— */
+#overlay-card, #start-card { border-color: var(--line); border-width: 2px; }
+#start-card h1, #overlay-card h2 { color: var(--gold); }
+
+/* —— 批次 B：牌桌皮肤（呢面纹理 + 樱木包边 + 中央樱花纹章水印） —— */
+#table-felt {
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 3px, transparent 3px 6px),
+    radial-gradient(ellipse at center, var(--felt1) 0%, var(--felt2) 78%);
+  border-color: #6d4f86;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.14), inset 0 0 70px rgba(8,10,30,.6), 0 12px 44px rgba(0,0,0,.55);
+}
+#table-felt::before {
+  content: ""; position: absolute; inset: 0; margin: auto; width: 220px; height: 160px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><g fill='%23ff9ec7' opacity='0.10'><ellipse cx='60' cy='28' rx='16' ry='27'/><ellipse cx='88' cy='47' rx='16' ry='27' transform='rotate(72 88 47)'/><ellipse cx='77' cy='79' rx='16' ry='27' transform='rotate(144 77 79)'/><ellipse cx='43' cy='79' rx='16' ry='27' transform='rotate(216 43 79)'/><ellipse cx='32' cy='47' rx='16' ry='27' transform='rotate(288 32 47)'/></g><circle cx='60' cy='55' r='7' fill='%23ffd3e3' opacity='0.12'/></svg>") center/contain no-repeat;
+  pointer-events: none;
+}
+/* 卡背：樱粉格纹 + 白点 lattice */
+.card.back {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.28) 0 5px, transparent 6px) 50% 50% / 26px 26px repeat,
+    repeating-linear-gradient(45deg, #ff9ec7 0 7px, #f27fae 7px 14px);
+  border-color: #d76d9d;
+}
+/* 字体：楷体手写感优先（CDN 版，断网回退系统黑体） */
+body {
+  font-family: "LXGW WenKai Screen", "Yu Gothic UI", "Hiragino Maru Gothic ProN",
+               "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+}
+/* 面板底边：赛璐璐半影过渡线 */
+.panel { position: relative; }
+.panel::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: .3;
+}
+
+/* —— P3-4-R2：座位筹码数字对比度增强（13px 等宽加粗，德州最高频读数） —— */
+.seat .stack { color: #e9edfb; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.seat .action { font-size: 12px; }
+.seat .pos { font-size: 11px; }
+.seat .pos.pos-blind { background: var(--blue); color: #0d1230; }
+
+/* —— 筹码演出配色与卡背统一（弃旧赌场金） —— */
+.flychip, .pchip {
+  background: radial-gradient(circle at 35% 30%, #ffd3e3, #ff9ec7);
+  border-color: #d76d9d;
+}
+
+/* —— 樱瓣层：每瓣独立轨迹（静态 HTML，无 JS；类选择器同时覆盖牌桌与首页） —— */
+.petals i:nth-child(1) { left: 5%;  animation-duration: 12s; animation-delay: -3s; }
+.petals i:nth-child(2) { left: 13%; animation-duration: 14s; animation-delay: -7s; }
+.petals i:nth-child(3) { left: 22%; animation-duration: 10s; animation-delay: -1s; width: 10px; height: 8px; }
+.petals i:nth-child(4) { left: 31%; animation-duration: 15s; animation-delay: -9s; }
+.petals i:nth-child(5) { left: 40%; animation-duration: 11s; animation-delay: -5s; width: 16px; height: 13px; }
+.petals i:nth-child(6) { left: 49%; animation-duration: 13s; animation-delay: -11s; }
+.petals i:nth-child(7) { left: 58%; animation-duration: 10s; animation-delay: -4s; width: 10px; height: 8px; }
+.petals i:nth-child(8) { left: 67%; animation-duration: 14s; animation-delay: -8s; }
+.petals i:nth-child(9) { left: 76%; animation-duration: 12s; animation-delay: -6s; width: 15px; height: 11px; }
+.petals i:nth-child(10) { left: 83%; animation-duration: 16s; animation-delay: -2s; }
+.petals i:nth-child(11) { left: 90%; animation-duration: 12s; animation-delay: -10s; width: 10px; height: 8px; }
+.petals i:nth-child(12) { left: 96%; animation-duration: 14s; animation-delay: -6s; }

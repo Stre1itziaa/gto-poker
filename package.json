@@ -1,0 +1,24 @@
+{
+  "name": "gto-poker",
+  "version": "0.9.0",
+  "description": "夜樱扑克部 —— 纯前端德州扑克 GTO 训练器：内置 GTO 决策引擎机器人同桌、实时教练面板、PeerJS 好友房联机。零依赖，克隆即玩。",
+  "license": "MIT",
+  "scripts": {
+    "start": "node serve.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Stre1itziaa/gto-poker.git"
+  },
+  "keywords": [
+    "poker",
+    "texas-holdem",
+    "gto",
+    "game-theory",
+    "training",
+    "no-dependencies"
+  ],
+  "engines": {
+    "node": ">=14"
+  }
+}

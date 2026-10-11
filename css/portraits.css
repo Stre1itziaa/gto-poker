@@ -1,0 +1,220 @@
+/* portraits.css — PNG 立绘的 CSS 骨骼动效层
+ *
+ * 核心思路（低配版 Live2D）：
+ *   一张静态 PNG，通过多层嵌套容器各自独立做 transform，
+ *   叠加出「呼吸 + 发丝摆动 + 视线漂移 + 眨眼」。
+ *   全部走 transform/opacity，命中合成器路径，无重排；
+ *   file:// 可用，零 JS 运行时。
+ *
+ * 层结构：
+ *   .pt            定位容器（尺寸由 JS 内联给定）
+ *   ├ .pt-glow     背光（accent 色，纯装饰）
+ *   └ .pt-breath   呼吸：整体 scaleY 微缩放 + 上下浮动，origin 在底部
+ *     └ .pt-sway   发丝摆动：顶部 origin 轻微旋转
+ *       ├ img.pt-layer  立绘主体
+ *       └ img.pt-eye    眨眼帧（绝对定位覆盖，平时 opacity:0）
+ */
+
+.pt {
+  position: relative;
+  display: block;
+  flex: none;
+  isolation: isolate;
+  user-select: none;
+}
+.pt img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* ---------- 背光 ---------- */
+.pt-glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 118%;
+  height: 78%;
+  transform: translate(-50%, -50%);
+  opacity: 0.5;
+  filter: blur(14px);
+  z-index: 0;
+  pointer-events: none;
+}
+.pt-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+/* ---------- 呼吸层 ---------- */
+.pt-breath {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pt:not(.pt-static) .pt-breath {
+    animation: pt-breathe var(--pt-breath, 3.8s) ease-in-out infinite;
+  }
+}
+/* 呼吸：纵向极微缩放 + 轻微上浮，模拟胸腔起伏与重心微移 */
+@keyframes pt-breathe {
+  0%   { transform: translateY(0)      scaleY(1); }
+  35%  { transform: translateY(-0.45%) scaleY(1.0055); }
+  70%  { transform: translateY(0.18%)  scaleY(0.9985); }
+  100% { transform: translateY(0)      scaleY(1); }
+}
+
+/* ---------- 发丝摆动层 ---------- */
+.pt-sway {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 6%;       /* 以头顶偏上为轴，模拟发根 */
+  will-change: transform;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pt:not(.pt-static) .pt-sway {
+    animation: pt-sway var(--pt-sway, 5.2s) ease-in-out infinite alternate;
+  }
+}
+/* 摆动：旋转 + 极轻微横向位移，制造「发梢滞后」的错觉 */
+@keyframes pt-sway {
+  from { transform: rotate(-0.85deg) translateX(-0.35%); }
+  to   { transform: rotate(0.85deg)  translateX(0.35%); }
+}
+
+/* ---------- 视线漂移 ----------
+ * 用一个额外的极慢平移动画叠加在主体上，
+ * 让角色的注视点缓慢游移，产生「在看牌桌」的活感。 */
+.pt-layer {
+  transform-origin: 50% 30%;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pt:not(.pt-static) .pt-layer {
+    animation: pt-look var(--pt-look, 9s) ease-in-out infinite;
+  }
+}
+@keyframes pt-look {
+  0%   { transform: translateX(0)     translateY(0); }
+  18%  { transform: translateX(-0.7%) translateY(0.15%); }
+  42%  { transform: translateX(0.5%)  translateY(-0.15%); }
+  66%  { transform: translateX(0.9%)  translateY(0.1%); }
+  85%  { transform: translateX(-0.45%) translateY(0); }
+  100% { transform: translateX(0)     translateY(0); }
+}
+
+/* ---------- 眨眼层 ----------
+ * idle 帧与 blink 帧严格同位对齐（tools/align.py 保证），
+ * 平时完全透明，在眨眼时间点瞬时淡入再淡出。 */
+.pt-eye {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 2;
+}
+/* B1① 止血: 差分非差分(独立生成图, 叠加=角色抽搐)——换帧关闭, 保留呼吸/摇曳/视线。
+   真差分重产后(B2: 同底图+眼部分层)再恢复本动画 */
+@media (prefers-reduced-motion: no-preference) {
+  .pt:not(.pt-static) .pt-eye {
+    animation: none;
+  }
+}
+/* steps(1) 让眨眼是瞬时切换，而不是淡入淡出的「溶图感」 */
+@keyframes pt-blink {
+  0%, 92.5%   { opacity: 0; }
+  93%, 96%    { opacity: 1; }
+  96.5%, 100% { opacity: 0; }
+}
+
+/* ---------- 表情间的交叉闪现 ----------
+ * 换表情时给一个短暂的亮度脉冲，掩盖 PN<img 重载的瞬间空白 */
+.pt.pt-swap .pt-layer {
+  animation: pt-pop 260ms ease-out;
+}
+@keyframes pt-pop {
+  0%   { filter: brightness(1.28); }
+  100% { filter: brightness(1); }
+}
+
+/* ---------- 状态：折叠 / 赢家 / 当前行动 ---------- */
+.pt-dim {
+  filter: saturate(0.45) brightness(0.62);
+  transition: filter 0.25s ease;
+}
+.pt-focus .pt-glow { opacity: 0.95; }
+
+/* ---------- 座位头像模式（bust）----------
+ * 只显示头肩区域。资产画布 590x900（优化版），实测脸部带位于
+ *   x 202-437（横向中心 54.5%）、y 117-379（纵向 13%-42%），脸高约 262px。
+ *
+ * 实现（2026-09-16 修正：旧 translate(-50%,-50%)+scale 链的缩放中心
+ * 没有落在脸上，脸部中心被推到容器顶缘外，座位只剩脖子——已废弃）。
+ * 新做法：
+ *   1. img 铺满容器（资产与容器同比例，object-fit:cover 即整图显示）；
+ *   2. object-position 把脸部中心对齐到容器 (54.5%, 27.5%)；
+ *   3. transform-origin 就设在脸部中心，scale(3.15) 以脸为圆心放大；
+ *      translate(-1.9px, 14.85px) 再把脸中心精确推到容器几何中心。
+ *   全程无 calc 混算、无百分比×数字，兼容性无坑。
+ */
+.pt-bust {
+  overflow: hidden;
+}
+.pt-bust .pt-breath,
+.pt-bust .pt-sway {
+  position: absolute;
+  inset: 0;
+}
+.pt-bust img,
+.pt-bust .pt-eye {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 54.5% 27.5%;          /* 脸部中心（align.py 归一化后全角色一致） */
+  transform-origin: 54.5% 27.5%;         /* 以脸为缩放圆心 */
+  /* 2.25 倍：脸完整入镜且不过分放大（脸部约 44px 高），脸中心位于容器 42% 高度处
+   * 偏移用元素百分比（随容器尺寸等比），座位 66px 与选人卡 92px 通用 */
+  transform: translate(-4.39%, 14.47%) scale(1.7);
+}
+/* bust 模式下摆动以脸部为轴，幅度收小，避免头像晃动 */
+.pt-bust .pt-sway { transform-origin: 54.5% 27.5%; }
+.pt-bust .pt-breath { animation-duration: calc(var(--pt-breath, 3.8s) * 1.4); }
+.pt-bust .pt-sway   { animation-duration: calc(var(--pt-sway, 5.2s) * 1.6); }
+/* bust 模式不需要视线漂移（会与上面的定位 transform 冲突） */
+.pt-bust.pt:not(.pt-static) .pt-layer { animation: none; }
+
+/* ---------- 空白占位（角色无资产时）----------
+ * 保持尺寸、不显示任何图形，避免裂图与布局跳动。 */
+.pt-empty,
+.pt-plain.pt-empty {
+  display: block;
+  background: rgba(20, 26, 51, 0.42);
+  border: 1px dashed rgba(154, 163, 199, 0.28);
+  border-radius: 10px;
+}
+/* 该角色在用别人的资产时，轻微降低饱和以示区分（便于开发期发现缺图） */
+.pt-sub .pt-glow { opacity: 0.28; }
+
+/* ---------- 静态降级 ----------
+ * 低端设备 / 用户偏好：去掉一切动画，只留静态立绘。 */
+.pt-static .pt-sway,
+.pt-static .pt-breath,
+.pt-static .pt-layer,
+.pt-static .pt-eye {
+  animation: none !important;
+}
+
+/* ---------- 减少动效偏好 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .pt-breath, .pt-sway, .pt-layer, .pt-eye {
+    animation: none !important;
+  }
+}

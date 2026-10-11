@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>PNG 立绘工坊 · Portrait Lab</title>
+<link rel="stylesheet" href="css/portraits.css">
+<style>
+  :root { --gold: #ff9ec7; }
+  body {
+    margin: 0; padding: 20px 24px; min-height: 100vh;
+    background:
+      radial-gradient(1100px 560px at 50% -12%, #2c3363 0%, transparent 60%),
+      #12172b;
+    color: #f2f0fa;
+    font-family: "Yu Gothic UI", "Hiragino Maru Gothic ProN", "LXGW WenKai",
+                 "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  }
+  h1 { font-size: 19px; margin: 0 0 4px; color: var(--gold); }
+  .sub { font-size: 12px; color: #9aa3c7; margin-bottom: 18px; }
+  h2 { font-size: 13px; color: var(--gold); margin: 22px 0 10px;
+       border-left: 3px solid var(--gold); padding-left: 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-end; }
+  .slot { text-align: center; }
+  .slot .cap { font-size: 12px; color: #9aa3c7; margin-top: 8px; }
+  .stage {
+    position: relative; border-radius: 14px; padding: 16px 10px 0;
+    background: linear-gradient(180deg, #1a2140 0%, #151a33 100%);
+    border: 2px solid #303c66; overflow: hidden;
+  }
+  .stage::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, #ff9ec7aa, transparent);
+  }
+  .stage-lg .pt { height: 470px !important; }
+  .stage-md .pt { height: 250px !important; }
+  .stage-sm .pt { height: 108px !important; }
+  .bust-wrap { display: flex; gap: 12px; }
+  .bust {
+    width: 104px; height: 104px; border-radius: 50%; overflow: hidden;
+    border: 2px solid #303c66; background: #0f1530;
+    display: block; position: relative;
+  }
+  .bust .pt { width: 100% !important; height: 100% !important; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  button {
+    background: #1c2b4a; color: #f2f0fa; border: 2px solid #303c66;
+    border-radius: 10px; padding: 7px 14px; cursor: pointer; font-size: 13px;
+  }
+  button:hover { border-color: var(--gold); }
+  button.on { background: var(--gold); color: #4a1f35; font-weight: bold; }
+  .note { font-size: 12px; color: #9aa3c7; line-height: 1.8; margin-top: 8px; }
+  code { color: var(--gold); }
+</style>
+</head>
+<body>
+  <h1>PNG 立绘工坊</h1>
+  <div class="sub">纯 PNG 差分 + CSS 骨骼动效 · 零运行时 · file:// 可直接打开</div>
+
+  <div class="toolbar">
+    <button id="btn-anim" class="on">动效 开</button>
+    <button id="btn-next">下一个表情</button>
+    <button id="btn-zoom">放大 / 原始</button>
+  </div>
+
+  <h2>完整立绘（470px）· 动效实时预览</h2>
+  <div class="row" id="big"></div>
+
+  <h2>座位头像（108px）· 圆形裁切</h2>
+  <div class="row" id="busts"></div>
+
+  <h2>全部表情差分</h2>
+  <div class="row" id="exprs"></div>
+
+  <h2>资产探测结果</h2>
+  <div class="note" id="probe">探测中…</div>
+
+  <script src="js/portraits.js"></script>
+  <script>
+    var CID = new URLSearchParams(location.search).get('cid') || 'suzu';
+    var EXPR_CN = { idle: '平静', think: '思考', happy: '得意', sad: '失落', blink: '眨眼' };
+
+    function slot(host, html, cap, cls) {
+      var d = document.createElement('div');
+      d.className = 'slot';
+      d.innerHTML = '<div class="stage ' + (cls || 'stage-md') + '">' + html + '</div>' +
+        '<div class="cap">' + cap + '</div>';
+      host.appendChild(d);
+      return d;
+    }
+
+    /* 主预览：先探测资产，拿到可用的表情后再渲染 */
+    Portraits.probeAll(CID).then(function () {
+      var av = Portraits.available[CID] || {};
+      var list = Object.keys(av).filter(function (k) { return av[k]; });
+
+      /* 大图：全部表情并排 */
+      var big = document.getElementById('big');
+      list.forEach(function (e) {
+        slot(big, Portraits.html(CID, e, 470, 'standing'),
+             e + '（' + (EXPR_CN[e] || e) + '）', 'stage-lg');
+      });
+
+      /* 座位头像 */
+      var busts = document.getElementById('busts');
+      list.forEach(function (e) {
+        var d = document.createElement('div');
+        d.className = 'slot';
+        d.innerHTML = '<div class="bust">' + Portraits.html(CID, e, 300, 'standing') + '</div>' +
+          '<div class="cap">' + e + '</div>';
+        busts.appendChild(d);
+      });
+
+      /* 探测结果 */
+      var names = list.map(function (e) { return e + '(' + (EXPR_CN[e] || e) + ')'; });
+      document.getElementById('probe').innerHTML =
+        '角色 <code>' + CID + '</code> 命中差分：' + names.join('、') + '<br>' +
+        '缺失差分将自动回退到 <code>idle</code>，不会出现裂图。';
+      window.__list = list; window.__i = 0;
+    });
+
+    /* 动效开关 */
+    document.getElementById('btn-anim').addEventListener('click', function () {
+      var on = !this.classList.contains('on');
+      this.classList.toggle('on', on);
+      this.textContent = '动效 ' + (on ? '开' : '关');
+      document.querySelectorAll('.pt').forEach(function (p) {
+        p.classList.toggle('pt-static', !on);
+      });
+    });
+
+    /* 切换表情（验证头部是否跳动） */
+    document.getElementById('btn-next').addEventListener('click', function () {
+      var list = window.__list; if (!list) return;
+      window.__i = (window.__i + 1) % list.length;
+      var e = list[window.__i];
+      var big = document.querySelector('#big .slot .pt');
+      if (big) {
+        var c = Portraits.byId(CID);
+        var host = big.parentNode;
+        host.innerHTML = Portraits.html(CID, e, 470, 'standing');
+        host.nextElementSibling.textContent = e + '（' + (EXPR_CN[e] || e) + '）';
+        if (!document.getElementById('btn-anim').classList.contains('on')) {
+          host.querySelector('.pt').classList.add('pt-static');
+        }
+      }
+    });
+
+    /* 缩放 */
+    document.getElementById('btn-zoom').addEventListener('click', function () {
+      var big = document.querySelector('#big');
+      big.classList.toggle('zoomed');
+      document.querySelectorAll('#big .pt').forEach(function (p) {
+        var cur = parseInt(p.style.height, 10) || 470;
+        p.style.height = (cur > 470 ? 470 : 760) + 'px';
+      });
+    });
+  </script>
+</body>
+</html>

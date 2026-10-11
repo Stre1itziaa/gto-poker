@@ -1,0 +1,144 @@
+/* characters.css — 角色系统样式（选人大厅 / 座位头像 / 立绘面板 / 表情气泡）
+ * 立绘本体为 PNG（动效见 portraits.css），这里只管容器与布局。 */
+
+/* ---------- 座位头像 ---------- */
+.portrait { display: flex; justify-content: center; min-height: 66px; margin: 2px 0; }
+.seat.folded .portrait { filter: grayscale(.4); }   /* P1-1: 去内层opacity, 折叠暗化只由外层 .seat.folded 承担 */
+
+/* PNG 立绘模式：座位头像用圆形裁切，容器固定 66px */
+.portrait .pt-bust {
+  width: 66px !important;
+  height: 66px !important;
+  border-radius: 50%;
+  border: 2px solid var(--line, #303c66);
+  background: rgba(10, 16, 40, .55);
+  overflow: hidden;
+}
+.seat.folded .portrait .pt-bust { border-color: #2a3352; }
+.seat.active .portrait .pt-bust { border-color: var(--gold); }
+.seat.winner .portrait .pt-bust { border-color: #f5c96b; box-shadow: 0 0 8px rgba(245,201,107,.45); }
+
+/* PNG 立绘模式：座位头像的动效降频，一桌多人同时呼吸不必那么频繁 */
+.portrait .pt-bust .pt-glow { opacity: .35; }
+
+/* ---------- 选人大厅（对标雀魂：角色卡网格 + 大预览） ---------- */
+.char-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 12px 0 4px; }
+.char-card {
+  width: 108px; padding: 8px 6px 7px; cursor: pointer; text-align: center;
+  background: var(--panel); border: 2px solid var(--line); border-radius: 12px;
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.char-card:hover { transform: translateY(-2px); border-color: var(--muted); }
+.char-card.sel {
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(255, 158, 199, .45);
+  background: rgba(255, 158, 199, .07);
+  animation: selGlow 2.4s ease-in-out infinite;
+}
+@keyframes selGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 158, 199, .35); }
+  50% { box-shadow: 0 0 22px rgba(255, 158, 199, .7); }
+}
+/* ---------- 选人大厅 V11：全高立绘条（对标 ref-select.png） ---------- */
+.char-grid { display: flex; flex-wrap: nowrap; gap: 8px; height: 330px; margin: 12px 0 6px; justify-content: flex-start; }
+.char-strip {
+  flex: 1; min-width: 0; position: relative; overflow: hidden;
+  border-radius: 12px; cursor: pointer;
+  border: 2px solid var(--line, #26304f);
+  background: linear-gradient(180deg, rgba(12,16,32,.5), rgba(12,16,32,.92));
+  transition: flex .22s ease, filter .22s ease, border-color .22s, box-shadow .22s;
+  filter: grayscale(.62) brightness(.6);
+}
+.char-strip .strip-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: top center; display: block;
+}
+.char-strip .strip-plate {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 22px 6px 8px; text-align: center;
+  background: linear-gradient(180deg, transparent, rgba(6,8,16,.94));
+}
+.char-strip .strip-plate b { display: block; font-size: 13.5px; color: var(--text); }
+.char-strip .strip-plate span { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+.char-strip:hover { filter: grayscale(.25) brightness(.85); }
+.char-strip.sel {
+  flex: 1.7;
+  filter: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 18px var(--sig, rgba(245,201,107,.55)), inset 0 0 0 1px rgba(255,255,255,.14);
+  background: linear-gradient(180deg, rgba(255,158,199,.10), rgba(6,8,16,.86));
+}
+.char-strip.sel::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.15), transparent 44%);
+}
+.char-strip.sel .strip-plate b { color: var(--gold); }
+.char-strip.sel .strip-plate span { color: var(--sig, var(--muted)); }
+
+/* 开始弹窗：左选项 / 右大预览（对标雀魂选人布局） */
+#start-card .pick-layout { display: flex; gap: 18px; align-items: stretch; text-align: left; }
+#start-card .pick-left { flex: 1.2; min-width: 0; }
+#start-card .pick-right {
+  flex: .8; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  background: radial-gradient(140px 180px at 50% 100%, rgba(255, 158, 199, .12), transparent 75%);
+  border-left: 1px solid var(--line); padding-left: 16px; min-width: 172px;
+}
+#char-preview .preview-img {
+  height: min(46vh, 420px); width: auto; max-width: 100%; object-fit: contain;
+  filter: drop-shadow(0 10px 24px rgba(0,0,0,.55));
+}
+#char-preview .pname { font-size: 17px; font-weight: bold; margin-top: 6px; text-align: center; }
+#char-preview .ptitle { font-size: 11px; color: var(--gold); text-align: center; }
+#char-preview .pquote { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; line-height: 1.6; min-height: 34px; }
+
+/* ---------- 游戏内立绘面板（玩家角色，桌面端右侧常驻） ---------- */
+#portrait-panel {
+  padding: 10px 14px 0; display: flex; flex-direction: column; align-items: center;
+}
+#portrait-panel .pt { height: 240px; filter: drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
+/* 全身服：游戏内右侧面板等比放大（宽高比 590/900 = 0.6556，240 × 0.6556 ≈ 157） */
+#portrait-panel .pt.pt-full { height: 240px !important; width: 157px !important; }
+#portrait-panel .pname { font-size: 13px; font-weight: bold; }
+#portrait-panel .ptitle { font-size: 10px; color: var(--gold); }
+
+/* ---------- 表情气泡 ---------- */
+.emote {
+  position: absolute; top: -14px; left: 50%; transform: translate(-50%, 6px);
+  background: #fffdf6; color: #3a3050; border: 1.5px solid var(--toon-line, #4a3350);
+  border-radius: 10px; padding: 2px 9px; font-size: 11px; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 5;
+}
+.emote.show { opacity: 1; transform: translate(-50%, 0); }
+.emote::after {
+  content: ""; position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: #fffdf6; border-bottom: none;
+}
+
+@media (max-width: 860px) {
+  .portrait { min-height: 48px; }
+  .portrait .pt { height: 48px; }
+  #portrait-panel { display: none; }  /* 手机端空间留给牌桌 */
+  #char-preview .pt { height: 150px; }
+  #char-preview.full { min-width: 190px; }
+  #char-preview.full .pt { height: 240px !important; width: 157px !important; }
+  #start-card .pick-layout { flex-direction: column; }
+  #start-card .pick-right { border-left: none; border-top: 1px solid var(--line); padding: 10px 0 0; }
+}
+
+/* ---------- 服装切换页签（选人大厅：默认服 / 部服） ---------- */
+#costume-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+#costume-row[hidden] { display: none; }
+.costume-tab {
+  padding: 4px 14px; cursor: pointer; font-size: 12px; font-weight: bold;
+  color: var(--muted); background: var(--panel);
+  border: 1.5px solid var(--line); border-radius: 999px;
+  transition: border-color .15s, color .15s, box-shadow .15s;
+}
+.costume-tab:hover { border-color: var(--muted); color: var(--fg, inherit); }
+.costume-tab.sel {
+  color: var(--gold); border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(255, 158, 199, .35);
+}
+
+/* 服装页签不换行（窄条内被拆行显得破碎） */
+#costume-row .costume-tab { white-space: nowrap; }

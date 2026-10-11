@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>牌面资产接入验证 · cards_live</title>
+<link rel="stylesheet" href="../css/style.css?v=20260924">
+<style>
+  body { background: #3a2f45; padding: 18px; font-family: system-ui, sans-serif; }
+  h3 { color: #e8dfd0; margin: 14px 0 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; }
+</style>
+</head>
+<body>
+<h3>全 52 张 · 标准尺寸 (52×74) · 真实 cardHTML 渲染</h3>
+<div class="row" id="all"></div>
+<h3>游戏最小尺寸 (46×66) + 牌背</h3>
+<div class="row" id="small"></div>
+<script src="../js/cards.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+  document.getElementById('all').innerHTML =
+    Cards.makeDeck().map(function (c) { return UI.cardHTML(c); }).join('');
+  document.getElementById('small').innerHTML =
+    Cards.makeDeck().slice(0, 8).map(function (c) { return UI.cardHTML(c, true); }).join('') +
+    '<div style="width:14px"></div>' +
+    UI.cardHTML(null, true) + UI.cardHTML(null);
+</script>
+</body>
+</html>

@@ -1,0 +1,580 @@
+/* landing.css — 雀魂式大厅：顶栏 + 角色舞台 + 右侧模式导航
+ * 结构（index.html #landing）：#lobby-backdrop 模糊立绘背景
+ *   → #lobby-topbar（logo/统计/玩家）→ #lobby-main = #lobby-stage + #lobby-side */
+
+#landing {
+  position: fixed; inset: 0; z-index: 80;
+  background: var(--bg);
+  overflow: hidden;
+}
+/* 选中部员的模糊放大剪影当背景——零新资产的氛围层 */
+#lobby-backdrop {
+  position: absolute; inset: -48px;
+  background-size: cover; background-position: center 16%;
+  filter: blur(34px) brightness(.3) saturate(1.25);
+  transform: scale(1.16);
+  transition: background-image .4s ease;
+}
+/* 晕影: 压住模糊背景中央亮斑, 视线回到看板娘 */
+#lobby-backdrop::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 42%, transparent 26%, rgba(4,6,14,.78) 88%);
+}
+#landing-petals { position: absolute; inset: 0; z-index: 1; }
+
+/* ---------- 顶栏 ---------- */
+#lobby-topbar {
+  position: relative; z-index: 3;
+  height: 58px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: linear-gradient(180deg, rgba(8,11,22,.92), rgba(8,11,22,.55) 65%, transparent);
+}
+.lb-logo {
+  font-size: 19px; font-weight: 800; letter-spacing: 2px;
+  background: linear-gradient(135deg, #ff9ec7, #a88fd8, #5fa8e8);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.lb-right { display: flex; align-items: center; gap: 12px; }
+.lb-stats { display: flex; gap: 8px; }
+.lb-stat {
+  font-size: 13.5px; padding: 5px 14px; border-radius: 999px;
+  background: rgba(10,16,32,.72); border: 1px solid var(--line, #26304f);
+  color: var(--text, #e8e4f0);
+}
+.lb-stat i { font-style: normal; color: var(--muted, #8b93b8); margin-right: 5px; }
+.lb-stat b { font-weight: 700; }
+.lb-stat b.pos { color: #7fd48f; }
+.lb-stat b.neg { color: #e07f7f; }
+.lb-player {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 8px 4px 5px; border-radius: 999px;
+  background: rgba(10,16,32,.72); border: 1px solid var(--line, #26304f);
+}
+.lb-avatar {
+  width: 30px; height: 30px; border-radius: 50%; overflow: hidden;
+  background: #1a2140; border: 2px solid var(--gold, #f5c96b);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--gold, #f5c96b); font-weight: 700;
+}
+.lb-player .nm { font-size: 14.5px; color: var(--text, #e8e4f0); cursor: text; }
+/* 内联改名（单机玩家此前无昵称入口，昵称只能由好友房写入） */
+.lb-name-edit {
+  width: 7em; min-width: 4em; max-width: 8em;
+  font-family: inherit; font-size: 14.5px; color: var(--text, #e8e4f0);
+  background: rgba(0,0,0,.5); border: 1px solid var(--gold, #f5c96b);
+  border-radius: 6px; padding: 2px 6px; outline: none;
+}
+.lb-edit {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+  color: var(--muted, #8b93b8); transition: color .15s, background .15s;
+}
+.lb-edit:hover, .lb-edit:focus-visible {
+  color: var(--gold, #f5c96b); background: rgba(245,201,107,.14); outline: none;
+}
+/* 大厅次级入口图标改内联 SVG（原 emoji 字符跨平台字形不一致） */
+#lobby-lib svg, #lobby-book svg { vertical-align: -2.5px; margin-right: 7px; }
+
+/* ---------- 主区：舞台 + 侧栏 ---------- */
+#lobby-main {
+  position: relative; z-index: 2;
+  display: flex; height: calc(100% - 58px);
+}
+#lobby-stage {
+  flex: 1.35; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  min-width: 0;
+}
+#stage-portrait { position: relative; align-self: flex-end; }
+#stage-portrait img {
+  height: auto; max-height: min(88vh, 880px); max-width: 100%; width: auto; display: block;
+  filter: drop-shadow(0 18px 40px rgba(0,0,0,.55));
+  animation: stageFloat 6s ease-in-out infinite;
+  cursor: pointer;
+  -webkit-user-drag: none;
+}
+@keyframes stageFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+#stage-plate {
+  position: absolute; left: 28px; top: 20px; max-width: 300px;
+  pointer-events: none;
+}
+@media (min-width: 1400px) {
+  /* 大屏: 人物靠近侧栏(三分位), 名牌贴其头侧, 模式卡加宽 */
+  #lobby-stage { justify-content: center; padding-right: 10%; }
+  #stage-plate {
+    left: clamp(40px, calc(50% - 660px), 32%);
+    top: 10%;
+  }
+  #lobby-side { width: min(560px, 38%); padding-right: 52px; }
+}
+#stage-plate .pname {
+  font-size: 34px; font-weight: 800; color: var(--text, #f0ecf8);
+  text-shadow: 0 2px 14px rgba(0,0,0,.65);
+}
+#stage-plate .pname::after {
+  content: ""; display: block; width: 46px; height: 3px; margin-top: 6px;
+  border-radius: 2px; background: var(--sig, var(--gold, #f5c96b));
+}
+#stage-plate .ptitle {
+  display: inline-block; margin-top: 8px; font-size: 14px;
+  padding: 3px 12px; border-radius: 999px;
+  color: var(--sig, var(--gold, #f5c96b));
+  background: rgba(8,11,22,.66); border: 1px solid var(--sig, var(--gold, #f5c96b));
+}
+#stage-plate .pquote {
+  margin-top: 10px; font-size: 13.5px; line-height: 1.8; color: #cfd3ea;
+  text-shadow: 0 1px 8px rgba(0,0,0,.8);
+}
+#stage-hint {
+  position: absolute; left: 28px; bottom: 20px;
+  font-size: 11px; color: rgba(232,228,240,.55);
+  pointer-events: none;
+}
+/* 部员切换器 #stage-chars/.sw-char：已随 8fd55f1 撤除（角色库弹窗为唯一选配处），死规则删除 */
+
+/* ---------- 右侧模式导航 ---------- */
+#lobby-side {
+  width: min(480px, 44%);
+  display: flex; flex-direction: column; justify-content: center; gap: 14px;
+  padding: 0 28px;
+  background: linear-gradient(90deg, transparent, rgba(7,10,20,.82) 34%);
+}
+#lobby-side .tagline {
+  font-size: 15px; color: var(--gold, #f5c96b); opacity: .85;
+  letter-spacing: 3px; margin-bottom: 2px;
+}
+.mode-cards { display: flex; flex-direction: column; gap: 12px; }
+.mode-card {
+  position: relative;
+  display: flex; align-items: center; gap: 14px;
+  padding: 24px 22px;
+  background: rgba(12,16,32,.78); border: 2px solid var(--line, #26304f); border-radius: 14px;
+  cursor: pointer; transition: transform .18s, border-color .18s, box-shadow .18s;
+}
+.mode-card:hover, .mode-card:focus-visible {
+  transform: translateX(-4px);
+  border-color: var(--gold, #f5c96b);
+  box-shadow: 0 8px 28px rgba(255,158,199,.16);
+  outline: none;
+}
+.mc-icon { flex: none; }
+.mc-icon svg { width: 46px; height: 46px; }
+.mc-body { flex: 1; min-width: 0; }
+.mc-title { font-size: 22px; font-weight: 800; color: var(--text, #f0ecf8); margin-bottom: 3px; }
+.mc-desc { font-size: 13.5px; color: var(--muted, #8b93b8); line-height: 1.7; }
+.mc-go {
+  flex: none; font-size: 16px; color: var(--gold, #f5c96b);
+  opacity: 0; transform: translateX(-6px); transition: all .18s;
+}
+.mode-card:hover .mc-go, .mode-card:focus-visible .mc-go { opacity: 1; transform: none; }
+
+/* #stage-costumes 容器已随旧版大厅撤除（服装在图鉴/角色库弹窗），死规则删除；
+   .costume-tab 仍用于 #lobby-seats 桌型选择器 */
+.costume-tab {
+  font-size: 13.5px; padding: 6px 16px; border-radius: 999px; cursor: pointer;
+  background: rgba(10,16,32,.72); color: var(--muted, #8b93b8);
+  border: 1px solid var(--line, #26304f);
+  transition: all .15s;
+}
+.costume-tab:hover { color: var(--text, #f0ecf8); border-color: var(--muted); }
+.costume-tab.sel {
+  color: var(--gold, #f5c96b); border-color: var(--gold, #f5c96b);
+  background: rgba(245,201,107,.08); font-weight: 700;
+}
+
+/* 11→12px 可读底线。注意 landing.css 晚于 style.css 加载，style.css 里同特异性
+   的 .landing-foot{font-size:12px} 会被本文件反压（与 #lobby-topbar 同一个坑），故在此为准。 */
+.landing-foot { font-size: 12px; }
+
+@media (max-width: 860px) {
+  #lobby-main {
+    flex-direction: column; overflow-y: auto;
+    height: calc(100% - 58px); display: block;
+  }
+  #stage-portrait img { max-height: 52vh; }   /* 竖屏立绘同步放大 */
+  /* 顶栏: 窄屏两行放不下, 统计挪出 */
+  #lobby-topbar { height: auto; flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+  .lb-logo { width: 100%; font-size: 17px; }
+  .lb-stats { order: 3; }
+  /* 舞台: 全部回归文档流, 高度由内容决定, 随整页滚动 */
+  #lobby-stage { display: flex; flex-direction: column; align-items: center; padding: 6px 14px 2px; }
+  #stage-plate { position: static; order: 1; max-width: 92%; text-align: center; }
+  #stage-plate .pname::after { margin-left: auto; margin-right: auto; }
+  #stage-plate .pquote { display: none; }   /* 竖屏同款：台词由气泡系统承担 */
+  #stage-portrait { order: 2; text-align: center; }
+  #stage-portrait img { max-height: 44vh; margin: 6px auto 0; }
+  #stage-bubble { top: 6px; }
+  #stage-hint { display: none; }
+  #lobby-side {
+    width: 100%; padding: 16px 16px 26px;
+    background: rgba(7,10,20,.82);
+  }
+  .mode-cards { gap: 10px; }
+}
+@media (max-width: 480px) {
+  .lb-stats { display: none; }   /* 极窄屏: 统计让位, 数据页可查 */
+  #stage-plate .pname { font-size: 26px; }
+}
+
+/* ---------- 好感度条 / 台词气泡 / 图鉴 ---------- */
+.aff { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.aff-lv {
+  font-size: 12px; font-weight: 700; color: #ffd9e8; white-space: nowrap;
+  background: rgba(8,11,22,.66); border: 1px solid rgba(255,158,199,.55);
+  padding: 2px 10px; border-radius: 999px;
+}
+.aff-bar { flex: 1; max-width: 180px; height: 7px; background: rgba(255,255,255,.14); border-radius: 4px; overflow: hidden; }
+.aff-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ff9ec7, #f5c96b); border-radius: 4px; }
+.aff-num { font-size: 11px; color: #cfd3ea; white-space: nowrap; }
+
+#stage-bubble {
+  position: absolute; left: 50%; top: 13%; transform: translateX(-50%) translateY(8px);
+  max-width: 340px; padding: 11px 18px; z-index: 4;
+  background: rgba(8,11,22,.92); border: 1px solid var(--gold, #f5c96b); border-radius: 14px;
+  color: #f0ecf8; font-size: 14px; line-height: 1.7;
+  opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none;
+}
+#stage-bubble.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+#lobby-book {
+  font-size: 14px; padding: 12px 16px; border-radius: 12px; cursor: pointer;
+  background: rgba(12,16,32,.78); color: var(--text, #f0ecf8);
+  border: 2px solid var(--line, #26304f); transition: all .15s;
+  text-align: left;
+}
+#lobby-book:hover { border-color: var(--gold, #f5c96b); transform: translateX(-3px); }
+
+#book-modal {
+  position: fixed; inset: 0; z-index: 120;
+  background: rgba(5,7,14,.84);
+  display: flex; align-items: center; justify-content: center;
+}
+#book-modal.hidden { display: none; }
+/* 图鉴（角色分页签版 2026-10-03）：固定高 min(86vh,340px) 弹性列布局，内容一屏收尽不滚动 */
+#book-card {
+  width: min(1060px, 96%); height: min(92vh, 760px);   /* 满高: 两行大格装整身大图(340px 时代格子只 77px 高) */
+  display: flex; flex-direction: column; overflow: hidden;
+  background: #12172e; border: 1px solid #2a3352; border-radius: 16px; padding: 10px 14px;
+}
+.book-top { flex: none; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+#book-card h3 { color: var(--text, #f0ecf8); margin: 0; font-size: 15px; }
+#book-close {
+  width: 32px; height: 32px; line-height: 30px; padding: 0; border-radius: 10px;
+  background: rgba(13,18,36,.9); color: var(--muted, #8b93b8); cursor: pointer;
+  border: 1px solid var(--line, #26304f); font-size: 15px; text-align: center;
+}
+#book-close:hover { color: var(--text, #f0ecf8); border-color: var(--gold, #f5c96b); }
+/* 角色分页签一行：小头像+名字，横向排布不换行（窄屏横向滚动） */
+.book-tabs {
+  flex: none; display: flex; gap: 6px; flex-wrap: nowrap;
+  overflow-x: auto; scrollbar-width: none; margin-bottom: 8px;
+}
+.book-tabs::-webkit-scrollbar { display: none; }
+.book-tab {
+  flex: none; display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 999px; cursor: pointer;
+  background: rgba(13,18,36,.9); border: 2px solid var(--line, #26304f);
+  transition: border-color .15s;
+}
+.book-tab img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; object-position: top; }
+.book-tab span { font-size: 11px; color: var(--muted, #8b93b8); white-space: nowrap; }
+.book-tab:hover { border-color: var(--gold, #f5c96b); }
+.book-tab.active { border-color: var(--gold, #f5c96b); background: rgba(245,201,107,.12); }
+.book-tab.active span { color: var(--gold, #f5c96b); font-weight: 700; }
+/* 内容区：当前角色 8 格，网格 4 列（横屏）/3 列（竖屏 ≤860），格高吃满剩余空间 */
+#book-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.book-head { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.book-head b { font-size: 14px; color: var(--text, #f0ecf8); }
+.book-head .book-title { font-size: 11px; color: var(--muted, #8b93b8); }
+.book-head .book-lv {
+  margin-left: auto; font-size: 11px; color: #ffd9e8;
+  border: 1px solid rgba(255,158,199,.55); border-radius: 999px; padding: 1px 8px;
+}
+.book-row {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: minmax(230px, auto); gap: 12px;   /* 定高230: 整身立绘 230*0.65≈150px 可辨 */
+}
+.book-cell {
+  position: relative; display: flex; flex-direction: column;
+  min-width: 0; min-height: 0; border-radius: 10px; overflow: hidden; cursor: pointer;
+  border: 2px solid var(--line, #26304f); background: #0d1224;
+  transition: border-color .15s, transform .15s;
+}
+.book-cell img {
+  flex: 1; min-height: 0; width: 100%;
+  object-fit: contain; object-position: center bottom;   /* 整身等比缩入底对齐——服装全貌可辨(原cover只露头) */
+  display: block; padding: 4px 0;
+}
+.book-cell span {
+  flex: none; display: block; font-size: 11px; text-align: center; padding: 3px 2px;
+  color: var(--muted, #8b93b8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.book-cell:hover { transform: translateY(-2px); border-color: var(--gold, #f5c96b); }
+.book-cell.equipped { border-color: var(--gold, #f5c96b); }
+.book-cell.equipped span { color: var(--gold, #f5c96b); }
+.book-cell.lock img { filter: grayscale(1) brightness(.22); }
+.book-cell.lock em {
+  position: absolute; left: 0; right: 0; bottom: 26px; font-size: 10px; font-style: normal;
+  color: #f5c96b; text-align: center; background: rgba(5,7,14,.78); padding: 3px 0;
+}
+.book-cell em.eq {
+  position: absolute; left: 0; right: 0; bottom: 26px; font-size: 10px; font-style: normal;
+  color: #7fd48f; text-align: center; background: rgba(5,7,14,.78); padding: 3px 0;
+}
+/* 竖屏：图鉴网格 3 列（横屏默认 4 列；按 orientation 判定，横屏矮窗 740 宽不受 ≤860 宽度档误伤） */
+@media (orientation: portrait) {
+  .book-row { grid-template-columns: repeat(3, 1fr); }
+}
+
+.lb-rank {
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: rgba(255,255,255,.07); border: 1px solid currentColor;
+}
+
+/* ---------- 角色库 · 看板娘（单页切换：一次一人，滚动归零 2026-10-03） ---------- */
+#lib-modal {
+  position: fixed; inset: 0; z-index: 120;
+  background: rgba(5,7,14,.84);
+  display: flex; align-items: center; justify-content: center;
+  padding: 2px;
+}
+#lib-modal.hidden { display: none; }
+/* 卡片内容自适应高度（不设固定高/不内滚）：立绘 calc(100vh-130px) + 信息区 ≤130px */
+#lib-card {
+  position: relative;
+  width: min(1000px, 96vw);
+  max-height: calc(100vh - 4px);
+  background: #12172e; border: 1px solid #2a3352; border-radius: 16px;
+  padding: 8px 8px 8px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+#lib-close {                       /* 右上关闭 X：44×44 命中区 */
+  position: absolute; top: 5px; right: 5px; z-index: 3;
+  width: 44px; height: 44px; padding: 0; border: none; border-radius: 12px;
+  background: rgba(8,11,22,.6); color: var(--muted, #8b93b8);
+  font-size: 18px; line-height: 1; cursor: pointer;
+  transition: color .15s, background .15s;
+}
+#lib-close:hover { color: var(--text, #f0ecf8); background: rgba(255,255,255,.12); }
+#lib-page-num {                    /* 角落页码 n / 6 */
+  position: absolute; top: 13px; left: 13px; z-index: 3;
+  font-size: 12px; font-weight: 700; color: var(--muted, #8b93b8);
+  background: rgba(8,11,22,.72); border: 1px solid var(--line, #26304f);
+  padding: 2px 10px; border-radius: 999px;
+  font-variant-numeric: tabular-nums; pointer-events: none;
+}
+.lib-hero { position: relative; flex: none; display: flex; justify-content: center; }
+.lib-img {
+  /* 等比完整显示全身(选皮肤的核心诉求)：contain 无裁切，框随图收 */
+  width: auto; max-width: 100%;
+  height: calc(100vh - 130px);
+  min-height: 200px;
+  object-fit: contain;
+  border-radius: 12px; display: block; background: transparent;
+  cursor: zoom-in;
+}
+.lib-arrow {                       /* 左右切换：44×44 命中区，立绘两侧垂直居中 */
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 44px; height: 44px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line, #26304f); border-radius: 50%;
+  background: rgba(8,11,22,.66); color: var(--text, #f0ecf8);
+  font-size: 24px; line-height: 1; cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.lib-arrow:hover { border-color: var(--gold, #f5c96b); color: var(--gold, #f5c96b); }
+.lib-arrow-prev { left: -10px; }
+.lib-arrow-next { right: -10px; }
+.lib-info { flex: none; }
+.lib-name { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.lib-name b { font-size: 14px; color: var(--sig, var(--text, #f0ecf8)); }
+.lib-name span { font-size: 12px; color: var(--muted, #8b93b8); }
+.kb-badge {
+  font-size: 11px; font-style: normal; font-weight: 700; color: #0a0e1a;
+  background: linear-gradient(135deg, #f5c96b, #ff9ec7); padding: 2px 9px; border-radius: 999px;
+}
+.lib-info .aff { margin-top: 3px; gap: 6px; }
+.lib-info .aff-lv { font-size: 10.5px; padding: 1px 7px; }
+.lib-info .aff-bar { max-width: none; height: 5px; }
+.lib-info .aff-num { font-size: 10.5px; }
+.lib-cos {                          /* 8 个 chip 单行横向滚动（PLAN §2.3），不撑高 */
+  display: flex; gap: 5px; margin-top: 4px;
+  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.lib-cos::-webkit-scrollbar { display: none; }
+.lib-cos button {
+  flex: none; white-space: nowrap;
+  font-size: 11px; padding: 2px 9px; border-radius: 999px; cursor: pointer;
+  background: rgba(255,255,255,.06); color: var(--muted, #8b93b8);
+  border: 1px solid var(--line, #26304f); transition: all .15s;
+}
+.lib-cos button:hover { color: var(--text, #f0ecf8); border-color: var(--muted); }
+.lib-cos button.sel { color: var(--sig, #f5c96b); border-color: var(--sig, #f5c96b); background: rgba(245,201,107,.08); font-weight: 700; }
+.lib-cos button.lock { opacity: .55; }
+.lib-set {                          /* 底部全宽主 CTA */
+  margin-top: 5px; width: 100%; height: 28px;
+  font-size: 12.5px; font-weight: 700; cursor: pointer;
+  border: none; border-radius: 9px;
+  background: linear-gradient(135deg, #ff9ec7, #f5c96b); color: #0a0e1a;
+  transition: transform .15s, box-shadow .15s, filter .15s;
+}
+.lib-set:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,158,199,.4); }
+.lib-set:disabled { cursor: default; filter: saturate(.3) brightness(.75); }
+/* 竖屏（≤860）：立绘 46vh 完整显示，其余同构，同样不滚动 */
+@media (max-width: 860px) {
+  .lib-img { height: 46vh; }
+}
+/* 横屏矮窗（≤560h）：左右分栏——左完整立绘列 / 右信息列(居中)，
+ * 360 高的屏全身可见(~330px 高立绘)，选皮肤不再裁切 */
+@media (orientation: landscape) and (max-height: 650px) {
+  #lib-card { width: min(880px, 96vw); }
+  #lib-body { display: flex; flex-direction: row; align-items: center; }   /* hero/info 的直接父容器是 lib-body */
+  #lib-card { overflow: visible; }
+  .lib-hero { flex: none; }
+  .lib-img { height: calc(100vh - 24px); min-height: 0; }
+  .lib-info {
+    flex: 1; min-width: 0; padding: 14px 14px 8px 12px;
+    display: flex; flex-direction: column; justify-content: center;
+    overflow-y: auto;
+  }
+  .lib-name { margin-top: 0; }
+  #lib-page-num { left: auto; right: 56px; }   /* 让开右上 X */
+}
+/* 点击立绘的全屏预览（小屏看服装细节） */
+.lib-fullview {
+  position: fixed; inset: 0; z-index: 140;
+  background: rgba(5,7,14,.96);
+  display: flex; align-items: center; justify-content: center;
+  cursor: zoom-out;
+}
+.lib-fullview.hidden { display: none; }
+.lib-fullview img {
+  max-width: 96vw; max-height: 96vh; object-fit: contain; display: block;
+  filter: drop-shadow(0 12px 36px rgba(0,0,0,.6));
+}
+.lib-fullview .fv-hint {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  font-size: 12px; color: var(--muted, #8b93b8); pointer-events: none;
+}
+
+/* ==================== 手游适配层（2026-10-02） ==================== */
+/* ---------- 横屏矮视口大厅 v2（雀魂式, 2026-10-03 用户拍板） ----------
+ * 立绘=唯一主角(全屏高·底对齐·脚踩底) | 名牌缩左上
+ * 右侧一列小胶囊钮(好友房/数据/角色库/图鉴) | 桌型分段+主CTA 在立绘脚下左下 */
+@media (orientation: landscape) and (max-height: 650px) {
+  #lobby-main { position: relative; display: flex; flex-direction: row; height: calc(100% - 46px); overflow: hidden; }
+  #lobby-topbar { height: 46px; padding: 0 16px; flex-wrap: nowrap; }
+  .lb-logo { width: auto; font-size: 16px; }
+  .lb-stats { display: none; }
+  #lobby-stage { flex: 1; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 96px 0 24px; }  /* 立绘居中偏左, 右让位钮列 */
+  /* 名牌贴左上(让开右侧钮列), 小而克制 */
+  #stage-plate { position: absolute; left: 24px; right: auto; top: 4px; max-width: 190px; text-align: left; }
+  #stage-plate .pname { font-size: 19px; }
+  #stage-plate .ptitle { font-size: 11px; padding: 2px 8px; }
+  #stage-plate .pquote { display: none; }
+  #stage-plate .aff { display: none; }
+  /* 立绘全屏高·底对齐(雀魂式脚踩底): 586屏→~530px / 360屏→~300px, 此前的 ~137px 告别 */
+  #stage-portrait { align-self: center; }   /* 底对齐由 stage justify-content:flex-end 承担; flex-end 在此是水平右贴=立绘贴右元凶 */
+  #stage-portrait img { max-height: calc(100vh - 56px); margin: 0; }
+  #stage-bubble { top: 4px; left: 34%; max-width: 40%; font-size: 12.5px; }
+  /* 主 CTA + 桌型: 立绘脚下左下(absolute 相对 lobby-main) */
+  #mc-train {
+    position: absolute; left: 16px; bottom: 14px; z-index: 4;
+    width: min(300px, 42vw); padding: 13px 18px;
+  }
+  #mc-train .mc-title { font-size: 20px; }
+  #lobby-seats {
+    position: absolute; left: 16px; bottom: 86px; z-index: 4;
+    background: none; border: none; padding: 0; margin: 0;
+    gap: 6px;
+  }
+  #lobby-seats button { font-size: 11px; padding: 4px 10px; border-radius: 999px; }
+  /* 右侧竖排小胶囊钮列(好友房/数据/角色库/图鉴): 悬浮居右, 无大卡无底色 */
+  #lobby-side {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 4;
+    width: auto; padding: 0; gap: 5px;
+    background: none; overflow: visible;
+  }
+  #lobby-side .tagline { display: none; }
+  #lobby-side .landing-foot { display: none; }   /* 版本号在顶栏 */
+  #lobby-side .mode-cards { display: contents; }  /* mc-multi/mc-data 直接进列 */
+  .mode-card:not(.mc-primary) {
+    flex-direction: column; gap: 2px; padding: 5px 6px; width: 78px;
+    border-radius: 14px; align-items: center; text-align: center;
+  }
+  .mode-card:not(.mc-primary) .mc-title { font-size: 12px; margin: 0; }
+  .mode-card:not(.mc-primary) .mc-desc { display: none; }
+  .mc-icon svg { width: 22px; height: 22px; }
+  .mc-go { display: none; }
+  #lobby-lib, #lobby-book { width: 78px; padding: 5px 6px; font-size: 11.5px; border-radius: 14px; line-height: 1.3; }
+  .petals i:nth-child(n+7) { display: none; }
+}
+
+/* ---------- 新手引导卡（首次进入大厅一次性） ---------- */
+#tut-modal {
+  position: fixed; inset: 0; z-index: 130;
+  background: rgba(5,7,14,.88);
+  display: flex; align-items: center; justify-content: center;
+}
+#tut-modal.hidden { display: none; }
+#tut-card {
+  width: min(520px, 92vw); max-height: 86vh; overflow-y: auto;
+  background: #12172e; border: 1px solid #2a3352; border-radius: 16px; padding: 22px 24px;
+}
+#tut-card h3 { color: var(--text, #f0ecf8); margin-bottom: 14px; }
+#tut-card ol { margin: 0 0 16px; padding-left: 20px; color: #cfd3ea; font-size: 13.5px; line-height: 2; }
+#tut-card ol b { color: var(--gold, #f5c96b); }
+#tut-card .tut-btn {
+  display: block; margin: 0 auto; font-size: 15px; font-weight: 700;
+  padding: 11px 36px; border-radius: 999px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, #ff9ec7, #f5c96b); color: #0a0e1a;
+}
+
+/* ---------- P0-1/P2-5: 主 CTA 与三级视觉 ---------- */
+.mc-primary {
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px 22px; cursor: pointer; border: none;
+  background: linear-gradient(135deg, #ff9ec7, #f5c96b);
+  border-radius: 14px; box-shadow: 0 8px 26px rgba(255, 158, 199, .35);
+  animation: ctaBreathe 2.4s ease-in-out infinite;
+  transition: transform .15s, box-shadow .15s;
+}
+.mc-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 34px rgba(255, 158, 199, .5); }
+.mc-primary .mc-title { font-size: 24px; font-weight: 800; color: #20101f; margin: 0; }
+.mc-primary .mc-desc { font-size: 12px; color: rgba(32, 16, 31, .72); margin-top: 2px; }
+@keyframes ctaBreathe {
+  0%, 100% { box-shadow: 0 8px 26px rgba(255, 158, 199, .35); }
+  50% { box-shadow: 0 8px 34px rgba(255, 158, 199, .62); }
+}
+/* 次级入口降为细描边紧凑行 */
+.mode-card:not(.mc-primary) { padding: 13px 16px; }
+.mode-card:not(.mc-primary) .mc-title { font-size: 16px; }
+.mode-card:not(.mc-primary) .mc-desc { font-size: 11.5px; }
+#lobby-lib, #lobby-book { font-size: 12px; padding: 8px 12px; }
+
+/* P2-2: 花瓣三档景深(16片), 近大远小 */
+.petals i:nth-of-type(3n) { transform: scale(1.25); filter: blur(.4px); opacity: .95; }
+.petals i:nth-of-type(3n+1) { transform: scale(.85); filter: blur(1.1px); opacity: .55; }
+
+/* ---------- 横屏雀魂右列终态(文件尾, 级联必赢: v0.7 三级视觉节在本块之前会压中段横屏块) ---------- */
+@media (orientation: landscape) and (max-height: 650px) {
+  .mode-card:not(.mc-primary) { padding: 5px 6px !important; gap: 2px; }
+  .mode-card:not(.mc-primary) .mc-desc { display: none !important; }
+  .mode-card:not(.mc-primary) .mc-title { font-size: 11.5px !important; margin: 0; }
+  #lobby-lib, #lobby-book { padding: 5px 6px !important; font-size: 11.5px !important; line-height: 1.3; white-space: nowrap; }
+}
+
+/* 锁定服装预览: 立绘临时换装+灰度+锁标(点锁定chip也能看到皮肤效果) */
+.lib-img.preview-lock { filter: grayscale(.85) brightness(.6); }
+.lib-lock-tip {
+  position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+  font-size: 12px; font-weight: 700; color: #f5c96b; white-space: nowrap;
+  background: rgba(5,7,14,.85); border: 1px solid rgba(245,201,107,.5);
+  padding: 4px 12px; border-radius: 999px; z-index: 3; pointer-events: none;
+}

@@ -1,0 +1,931 @@
+/* GTO 德州扑克 — 样式 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --felt1: #1d5c3a; --felt2: #0f3a24;
+  --bg: #0b120e; --panel: #121c16; --line: #22352a;
+  --gold: #d8b45a; --text: #e8e6df; --muted: #8ba394;
+  --red: #d24b4b; --green: #4caf7d; --blue: #5a8fd8;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: "LXGW WenKai Screen", "Yu Gothic UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* ---------- 顶栏 ---------- */
+#topbar {
+  position: relative; z-index: 60;   /* P1-C：高于结算遮罩 */
+  display: flex; align-items: center; gap: 18px;
+  padding: 10px 18px; border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+#topbar .brand { font-size: 18px; font-weight: bold; color: var(--gold); }
+#topbar .brand .sub { font-size: 12px; color: var(--muted); margin-left: 8px; font-weight: normal; }
+#topbar .meta { flex: 1; min-width: 0; color: var(--muted); font-size: 13px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }  /* P2-6：窄屏不换行，顶栏高度稳定 */
+#topbar .controls { display: flex; gap: 14px; align-items: center; font-size: 13px; }
+.toggle { cursor: pointer; user-select: none; color: var(--muted); }
+.toggle input { accent-color: var(--gold); }
+.toggle.inline { margin-top: 10px; font-size: 12px; }
+button {
+  background: #1f2647; color: var(--text); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 14px;
+}
+button:hover { border-color: var(--gold); }
+button:active { transform: scale(.96); filter: brightness(1.25); }
+button.primary { background: var(--gold); color: #20180a; font-weight: bold; border: none; }
+button.primary:hover { filter: brightness(1.08); }
+button.big { font-size: 17px; padding: 12px 34px; margin-top: 18px; }
+button.ghost { background: transparent; }
+
+/* ---------- 主区 ---------- */
+main { flex: 1; display: flex; min-height: 0; }
+#table-wrap { flex: 1; position: relative; min-width: 0; }
+#table-felt {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(62%, 900px); height: min(74%, 460px);
+  background: radial-gradient(ellipse at center, var(--felt1) 0%, var(--felt2) 78%);
+  border: 10px solid #241a10; border-radius: 999px;
+  box-shadow: inset 0 0 60px rgba(0,0,0,.55), 0 10px 40px rgba(0,0,0,.5);
+}
+#board {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+  display: flex; gap: 8px;
+}
+#pot {
+  position: absolute; left: 50%; top: 62%; transform: translate(-50%, -50%);
+  background: rgba(0,0,0,.45); border: 1px solid rgba(216,180,90,.5);
+  color: var(--gold); font-size: 16px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 4px 16px; border-radius: 999px;
+}
+
+/* ---------- 牌 (图像牌面 assets/cards/，由 tools/make_cards.py 产出) ---------- */
+.card {
+  position: relative;
+  width: 52px; height: 74px;
+  user-select: none;
+  animation: cardIn .26s cubic-bezier(.2,.8,.3,1) backwards;
+}
+.card.d1 { animation-delay: .08s; }
+.card.d2 { animation-delay: .16s; }
+@keyframes cardIn { from { transform: translateY(-16px) rotate(-6deg) scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+.card .cface {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  display: block; border-radius: 6px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
+}
+.card.small { width: 46px; height: 66px; }
+/* 自己的底牌放大: 主角视角 */
+.seat.me .card.small { width: 58px; height: 82px; margin-top: -8px; }
+.seat.me .cards { align-items: flex-end; }
+
+/* ---------- 座位 ---------- */
+.seat {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 150px; padding: 8px 10px; border-radius: 12px;
+  background: rgba(10, 20, 14, .88); border: 1px solid var(--line);
+  text-align: center; transition: border-color .2s, box-shadow .2s;
+}
+.seat.active { border-color: var(--gold); box-shadow: 0 0 18px rgba(216,180,90,.35); }
+.seat.winner { border-color: var(--green); box-shadow: 0 0 20px rgba(76,175,125,.5); }
+.seat.folded { opacity: .38; }
+.seat .name { font-size: 13px; color: var(--text); }
+.seat .name .bot-tag { color: var(--blue); font-size: 10px; margin-left: 4px; }
+/* 座位可读性（美术布局重规划 §2.2/§6-5）：stack ≥12px + 等宽数字；显式 block，
+ * 与下方 .betstack 各占一行——筹码图标行不再以 vertical-align 压进底牌行 */
+.seat .stack {
+  display: block; font-size: 12px; color: var(--gold);
+  margin: 2px 0 4px; font-variant-numeric: tabular-nums;
+}
+.seat .pos {
+  position: absolute; top: -9px; left: -9px; background: var(--gold); color: #20180a;
+  font-size: 10px; font-weight: bold; border-radius: 999px; padding: 2px 7px;
+}
+/* 遮挡审计 P1-1：上排座位（.seat-top，y<35%）的上溢物改向卡片下方弹出——
+ * 位置徽章挂下缘、表情气泡向下翻，不再没入顶栏 */
+.seat-top .pos { top: auto; bottom: -9px; }
+.seat-top .emote { top: auto; bottom: -40px; transform: translate(-50%, -6px); }  /* 完全让开下挂徽章 */
+.seat-top .emote.show { transform: translate(-50%, 0); }
+.seat-top .emote::after {
+  bottom: auto; top: -5px; border: 5px solid transparent;
+  border-bottom-color: #fffdf6; border-top: none;
+}
+.seat .cards { display: flex; gap: 5px; justify-content: center; min-height: 54px; }
+.seat .action { font-size: 12px; color: var(--muted); margin-top: 4px; min-height: 16px; }
+.seat .action.bold { color: var(--text); }
+.seat .thinking { color: var(--gold); font-size: 11px; animation: pulse 1s infinite; }
+.seat .win-amt { color: var(--green); font-size: 12px; font-weight: bold; }
+@keyframes pulse { 0%,100% { opacity: .4; } 50% { opacity: 1; } }
+
+/* ---------- 侧栏 ---------- */
+#side { width: 320px; border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.panel { border-bottom: 1px solid var(--line); padding: 12px 14px; }
+.panel h3 { font-size: 14px; color: var(--gold); margin-bottom: 8px; }
+.panel#logpanel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#log { flex: 1; overflow-y: auto; font-size: 12px; color: var(--muted); line-height: 1.7; }
+#log .street { color: var(--gold); margin-top: 4px; }
+#log .act b { color: var(--text); }
+.muted { color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+/* 教练面板 */
+#coach-body .row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
+#coach-body .bar { flex: 1; height: 8px; background: #1a2a20; border-radius: 999px; overflow: hidden; }
+#coach-body .bar i { display: block; height: 100%; background: linear-gradient(90deg, #4caf7d, #d8b45a); }
+#coach-body .suggest {
+  margin-top: 8px; padding: 8px 10px; border: 1px solid var(--gold); border-radius: 8px;
+  background: rgba(216,180,90,.08); font-size: 13px;
+}
+#coach-body .suggest b { color: var(--gold); }
+#coach-body .kv { display: flex; justify-content: space-between; font-size: 12px; margin: 3px 0; }
+#coach-body .kv span:last-child { color: var(--text); }
+
+/* ---------- 操作栏（两态化：默认单行三键 + ▾调注；滑条/快捷注收进浮层面板） ----------
+ * 按钮与面板的具体样式在下方「牌桌 v2 · 筹码与行动条」段（晚于 ≤860 媒体块，
+ * 级联天然压制旧窄屏规则）。行动条本体恒为单行，高度只由三键 52px 决定。 */
+#actionbar {
+  position: relative;   /* 两态化锚点：#raise-box 浮层绝对定位挂行动条（横屏文档流/竖屏 fixed 均成立） */
+  border-top: 1px solid var(--line); background: var(--panel);
+  padding: 10px 14px; min-height: 73px;
+  display: flex; align-items: center; gap: 12px;
+}
+#action-hint { color: var(--muted); font-size: 14px; }
+#turn-clock { margin-left: auto; color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; }
+#action-controls { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+
+/* ---------- 演出：筹码飞行 / 赢池星爆 / 樱瓣 / 全下聚焦 ---------- */
+.khint {
+  display: inline-block; margin-left: 6px; padding: 0 5px;
+  border: 1px solid currentColor; border-radius: 4px;
+  font-size: 10px; opacity: .7; font-weight: normal;
+}
+/* 快捷表情条（联机/单机通用）；靠左放，右侧是牌局日志不能盖 */
+#emote-strip {
+  position: fixed; left: 20px; bottom: calc(var(--actionbar-h, 153px) + 12px); z-index: 45;
+  display: flex; flex-wrap: wrap; gap: 6px; max-width: 260px;
+}
+/* 触控规格收敛（§6-2：65px→44px 上限）：定高 36px pill（§4 规格表）+ 上限 44px 双保险，
+ * 图标/角标随行高弹性居中，等比不裁切 */
+.emote-chip {
+  display: inline-flex; align-items: center;
+  height: 36px; min-height: 36px; max-height: 44px; padding: 0 14px;
+  font-size: 13px; line-height: 33px;   /* ≤860 弧形轮盘把它改回 inline-block，行高兜底垂直居中 */
+  border-radius: 999px;
+  background: rgba(26, 33, 64, .92); border: 1.5px solid var(--gold); color: var(--text);
+}
+.emote-chip:hover { filter: brightness(1.15); }
+#emote-fab { display: none; }   /* 桌面 chips 常显，浮标只在窄屏出现（遮挡审计 P0-1） */
+.flychip {
+  position: fixed; top: 0; left: 0; width: 12px; height: 12px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe9a8, #d8b45a);
+  border: 1.5px solid #8a6a2a; z-index: 60; pointer-events: none;
+}
+.pchip {
+  display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1.5px;
+  margin-right: 5px; border: 1.5px dashed #8a6a2a;
+  background: radial-gradient(circle at 35% 30%, #ffe9a8, #d8b45a);
+}
+.preset-suggest { animation: presetPulse 1.6s ease-in-out infinite; }
+@keyframes presetPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255,158,199,0); }
+  50% { box-shadow: 0 0 12px rgba(255,158,199,.8); }
+}
+.winburst { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 6; pointer-events: none; }
+.winburst svg { width: 130px; height: 130px; animation: burst .85s ease-out forwards; }
+@keyframes burst { 0% { transform: scale(.3) rotate(0deg); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(1.5) rotate(140deg); opacity: 0; } }
+.petals { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+#seats { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+#seats .seat { pointer-events: auto; }
+#board { z-index: 2; }
+#pot { z-index: 2; }
+.petals i { position: absolute; top: -6%; width: 14px; height: 11px; display: block; opacity: .85;
+  background: radial-gradient(circle at 30% 30%, #ffd3e3, #ff9ec7);
+  border-radius: 60% 40% 55% 45%; animation: petalFall linear infinite; }
+@keyframes petalFall { to { transform: translateY(114vh) rotate(520deg); } }
+body.runout .seat:not(.active) { opacity: .28; }
+body.runout #table-felt { box-shadow: inset 0 0 140px rgba(0,0,0,.8), 0 10px 40px rgba(0,0,0,.5); }
+body.runout #pot { filter: brightness(1.25); }
+@media (prefers-reduced-motion: reduce) {
+  .petals, .eyes, .hair-sway, .card, .char-card.sel, .winburst svg { animation: none !important; }
+}
+.hidden { display: none !important; }
+
+/* ---------- 遮罩 ---------- */
+#overlay, #start-modal, #multi-modal, #data-modal {
+  position: fixed; inset: 0; background: rgba(4, 8, 10, .78);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+#overlay-card, #start-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+  padding: 28px 34px; max-width: 560px; text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+}
+/* 全身立绘等大资产会把弹窗撑高：限高 + 可滚动，保证「开始牌局」永远可达 */
+#start-card { max-height: 92vh; overflow-y: auto; }
+/* 全身服模式：弹窗加宽，抵消右栏放大对网格的挤压 */
+#start-card.full-mode { max-width: 660px; }
+#overlay-card h2 { color: var(--gold); margin-bottom: 12px; }
+#overlay-body { font-size: 14px; line-height: 1.9; text-align: left; }
+#overlay-body .win-line { color: var(--green); font-weight: bold; }
+#overlay-body .win-line.gold { color: #f5c96b; }
+#overlay-body .hole-line { color: var(--muted); font-size: 12px; }
+#overlay-body .card { animation: none !important; }   /* 弹层里禁发牌动画：截图/读屏不再拿到空帧 */
+.ov-board { display: flex; gap: 8px; justify-content: center; margin: 4px 0 8px; }
+.ov-quotes {
+  margin: 2px 0 8px; padding: 8px 12px; border: 1.5px solid var(--gold);
+  border-radius: 12px; background: rgba(255, 158, 199, .08);
+}
+.ov-quote { font-size: 13px; color: var(--text); line-height: 1.8; }
+.ov-quote b { color: var(--gold); }
+#btn-next { margin-top: 16px; }
+
+#start-card h1 { color: var(--gold); font-size: 26px; margin-bottom: 14px; }
+#start-card .lead { font-size: 13px; color: var(--muted); line-height: 1.9; text-align: left; }
+#start-card .opt-row { margin-top: 16px; font-size: 14px; color: var(--text); }
+#start-card .opt-row label { margin: 0 8px; cursor: pointer; }
+#start-card .opt-row input { accent-color: var(--gold); }
+#start-card .foot { margin-top: 16px; font-size: 11px; color: var(--muted); }
+#start-card code { color: var(--gold); }
+
+/* ---------- 窄桌面（1024/1280）：座位卡收窄防越界，侧栏让位（遮挡审计 P1-4） ---------- */
+@media (min-width: 861px) and (max-width: 1180px) {
+  .seat { width: 132px; padding: 7px 8px; }
+  .seat .name { font-size: 12px; }
+  .seat .pos { font-size: 9px; padding: 2px 6px; }
+  #side { width: 280px; }
+}
+
+/* ---------- 手机 / 窄屏 ---------- */
+@media (max-width: 860px) {
+  body { overflow: auto; height: auto; min-height: 100%; }
+  #topbar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  #topbar .brand { font-size: 15px; }
+  #topbar .brand .sub { display: none; }
+  #topbar .controls { font-size: 12px; gap: 10px; }
+
+  main { flex-direction: column; padding-bottom: 108px; } /* 给固定操作栏留位 */
+  #table-wrap { flex: none; height: 56vh; min-height: 330px; }
+  #table-felt { width: 96%; height: 66%; }
+
+  /* 遮挡审计 P0-1：表情 chips 固定 bottom 压住行动按钮（点击被拦截）——
+   * 窄屏收成右下浮标，点击展开，选完即收 */
+  #emote-strip {
+    left: auto; right: 14px;
+    bottom: calc(var(--actionbar-h, 64px) + 12px);   /* JS 实时写操作栏实高，换行也不压 */
+    flex-direction: column; align-items: flex-end; max-width: none;
+  }
+  #emote-fab {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 40px; border-radius: 999px; cursor: pointer;
+    font-size: 13px; background: rgba(26, 33, 64, .95);
+    border: 1.5px solid var(--gold); color: var(--text);
+  }
+  #emote-strip .emote-chip { display: none; }
+  #emote-strip.open .emote-chip { display: inline-block; }
+
+  .seat { width: 100px; padding: 4px 5px; border-radius: 9px; }   /* 内边距各收 1px，抵消 stack 12px 的行高增长 */
+  .seat .name { font-size: 12px; }   /* 计划§2.2：座位可读性 11→12px 底线 */
+  .seat .name .bot-tag { font-size: 9px; }
+  .seat .stack { font-size: 12px; margin: 1px 0 2px; }   /* 座位可读性：stack 同样 12px 底线 */
+  .seat .pos { font-size: 8px; padding: 1px 5px; top: -7px; left: -7px; }
+  .seat .action { font-size: 10px; min-height: 13px; }
+  .card { width: 38px; height: 54px; border-radius: 6px; }
+  .card .r { font-size: 15px; } .card .s { font-size: 17px; }
+  .card.small { width: 26px; height: 38px; }
+  .card.small .r { font-size: 10px; } .card.small .s { font-size: 11px; }
+  #board { gap: 5px; top: 40%; }
+  #pot { font-size: 12px; top: 58%; white-space: nowrap; }
+
+  #side { width: 100%; border-left: none; border-top: 1px solid var(--line); }
+  #log { max-height: 200px; }
+  #coach-body .row { font-size: 11px; }
+  #coach-body .row span:first-child { width: 42px; }
+  #coach-body .row span:last-child { width: 96px; }
+
+  /* 操作栏固定在视口底部：任何时刻可点，不用滚动。
+   * 两态化后恒为单行（滑条/快捷注在浮层里），不再 wrap；旧 raise-box/slider/presets
+   * 的换行与压缩规则全部废弃（v0.3 滑条被压到 90px 的 flex 失效 bug 源头） */
+  #actionbar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+    flex-wrap: nowrap; gap: 8px; padding: 8px 10px; min-height: 0;
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, .55);
+  }
+
+  /* 摊牌结果改为底部抽屉，不遮挡牌桌 */
+  #overlay { align-items: flex-end; }
+  #overlay-card {
+    width: 100%; max-width: none; margin: 0;
+    border-radius: 16px 16px 0 0; max-height: 52vh; overflow-y: auto;
+  }
+
+  #start-card { margin: 16px; padding: 20px 18px; max-height: 86vh; overflow-y: auto; }
+}
+
+/* ==================== 好友房大厅（mp.js） ==================== */
+.mp-row { display: flex; align-items: center; gap: 12px; margin: 12px 0; flex-wrap: wrap; }
+.mp-row > b { flex-shrink: 0; }
+.mp-input {
+  background: var(--panel, rgba(20,14,26,.7));
+  border: 1.5px solid var(--line, #4a3a55);
+  border-radius: 8px; color: var(--fg, #f0e8f4);
+  padding: 8px 12px; font-size: 14px; outline: none;
+}
+.mp-input:focus { border-color: var(--gold, #e8b96a); }
+.mp-code { width: 10em; letter-spacing: 4px; font-size: 18px; text-transform: uppercase; }
+.mp-tabs { display: flex; gap: 8px; margin: 14px 0 10px; }
+.mp-tab {
+  flex: 1; padding: 10px; border-radius: 10px; cursor: pointer;
+  border: 1.5px solid var(--line, #4a3a55); background: transparent;
+  color: var(--fg, #f0e8f4); font-size: 14px;
+}
+.mp-tab.sel { border-color: var(--gold, #e8b96a); color: var(--gold, #e8b96a); background: rgba(232,185,106,.07); }
+#mp-room-code {
+  font-size: 38px; font-weight: 700; letter-spacing: 10px;
+  color: var(--gold, #e8b96a); text-align: center; line-height: 1.2;
+  padding-left: 10px; /* 抵消字距造成的视觉偏移 */
+}
+.mp-players { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.mp-pl {
+  display: flex; align-items: center; gap: 12px;
+  padding: 6px 12px; border: 1px solid var(--line, #4a3a55); border-radius: 10px;
+}
+.mp-pl.empty { justify-content: center; color: var(--muted, #9a8aa8); font-size: 12px; border-style: dashed; }
+.mp-pl .avatar { width: 46px; height: 46px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.mp-tag {
+  font-size: 11px; color: var(--gold, #e8b96a);
+  border: 1px solid var(--gold, #e8b96a); border-radius: 6px; padding: 0 5px;
+}
+.mp-chars { display: flex; gap: 8px; flex-wrap: wrap; }
+.mp-ch {
+  width: 74px; padding: 6px 4px; text-align: center; cursor: pointer;
+  border: 1.5px solid var(--line, #4a3a55); border-radius: 10px;
+  transition: border-color .15s, transform .15s;
+}
+.mp-ch:hover { transform: translateY(-2px); }
+.mp-ch.sel { border-color: var(--gold, #e8b96a); background: rgba(232,185,106,.08); }
+.mp-ch-name { font-size: 11px; margin-top: 2px; }
+.mp-tag.ok {
+  color: #fff; border-color: #2fbf71; background: #2fbf71; font-weight: 700;
+}
+.mp-tag.wait { color: var(--muted, #9a8aa8); border-color: var(--muted, #9a8aa8); }
+.mp-pl.notready { opacity: .68; }
+#mp-lobby-status {
+  text-align: center; font-size: 13px; min-height: 20px; margin: 4px 0;
+  color: var(--muted);
+}
+#mp-lobby-status.allready { color: var(--gold); font-weight: 700; }
+#mp-btn-start.attn { animation: startBreathe 1.2s ease-in-out infinite; }
+@keyframes startBreathe {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 158, 199, 0); }
+  50% { box-shadow: 0 0 18px rgba(255, 158, 199, .8); }
+}
+#mp-btn-start:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ==================== 批 1 快赢周 ==================== */
+/* T1.8 读秒环 */
+#turn-clock { display: inline-flex; align-items: center; gap: 5px; }
+#turn-clock[style*="none"] { display: none !important; }
+#turn-clock svg { width: 26px; height: 26px; transform: rotate(-90deg); }
+#turn-clock .ring-bg { fill: none; stroke: var(--line, #4a3a55); stroke-width: 3.5; }
+#turn-clock .ring-fg {
+  fill: none; stroke: var(--gold, #e8b96a); stroke-width: 3.5; stroke-linecap: round;
+  stroke-dasharray: 97.39; stroke-dashoffset: 0;
+  transition: stroke-dashoffset .45s linear, stroke .3s;
+}
+#turn-clock.urgent .ring-fg { stroke: var(--red, #e8607f); }
+#turn-clock b { font-size: 13px; font-weight: normal; font-variant-numeric: tabular-nums; }
+#turn-clock.urgent b { font-weight: bold; }
+
+/* T1.5 底池脉冲 */
+#pot-inner { display: inline-block; }
+#pot-inner.pot-pulse { animation: potPulse .6s cubic-bezier(.3,1.3,.4,1); }
+@keyframes potPulse { 0% { transform: scale(1); } 35% { transform: scale(1.16); filter: brightness(1.35); } 100% { transform: scale(1); } }
+
+/* T1.7 下注数字弹入 */
+.seat .action.act-pop .bold { display: inline-block; animation: actPop .45s cubic-bezier(.3,1.4,.4,1); }
+@keyframes actPop { 0% { transform: scale(.55); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+/* T1.9 庄位实体扣 */
+.seat .pos.pos-dealer {
+  left: auto; right: -10px; top: -10px;
+  width: 26px; height: 26px; line-height: 22px; padding: 0; text-align: center;
+  border-radius: 50%; background: #f7f0dc; color: #7a1f3d;
+  border: 2px solid var(--gold, #e8b96a); box-shadow: 0 2px 8px rgba(0,0,0,.55);
+  font-size: 13px;
+}
+.seat-top .pos.pos-dealer { top: auto; bottom: -10px; }
+@media (max-width: 860px) {
+  #turn-clock svg { width: 22px; height: 22px; }
+  .seat .pos.pos-dealer { width: 22px; height: 22px; line-height: 18px; font-size: 11px; right: -8px; top: -8px; }
+  .seat-top .pos.pos-dealer { top: auto; bottom: -8px; }
+}
+
+/* T1.4 表情轮盘（窄屏 fab 展开为弧形四键） */
+@media (max-width: 860px) {
+  #emote-strip .emote-chip {
+    display: inline-block; position: absolute; right: 8px; bottom: 8px;
+    transform: translate(0, 0) scale(.5); opacity: 0; pointer-events: none;
+    transition: transform .22s cubic-bezier(.3,1.3,.4,1), opacity .16s;
+  }
+  #emote-strip.open .emote-chip { opacity: 1; pointer-events: auto; }
+  #emote-strip.open .emote-chip:nth-of-type(2) { transform: translate(-10px, -66px) scale(1); }
+  #emote-strip.open .emote-chip:nth-of-type(3) { transform: translate(-62px, -52px) scale(1); }
+  #emote-strip.open .emote-chip:nth-of-type(4) { transform: translate(-96px, -16px) scale(1); }
+  #emote-strip.open .emote-chip:nth-of-type(5) { transform: translate(-104px, 28px) scale(1); }
+}
+
+/* ==================== 数据分析板块 ==================== */
+#data-body h4 { color: var(--gold); font-size: 14px; margin: 16px 0 8px; }
+.data-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 10px 0 4px; }
+@media (max-width: 700px) { .data-cards { grid-template-columns: repeat(2, 1fr); } }
+.data-stat { background: rgba(0,0,0,.25); border: 1px solid var(--line, #4a3a55); border-radius: 12px; padding: 10px 14px; text-align: center; }
+.data-stat i { display: block; font-style: normal; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+.data-stat b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.data-stat b.pos { color: #7ee2a8; }
+.data-stat b.neg { color: #ff9d9d; }
+.data-chart { width: 100%; height: auto; background: rgba(0,0,0,.25); border-radius: 10px; }
+.chart-line { fill: none; stroke: var(--gold, #e8b96a); stroke-width: 2.5; stroke-linejoin: round; }
+.chart-dot { fill: var(--gold, #e8b96a); stroke: rgba(0,0,0,.4); }
+.chart-dot.neg { fill: #ff9d9d; }
+.chart-zero { stroke: var(--line, #4a3a55); stroke-dasharray: 4 4; }
+.chart-max, .chart-min { fill: var(--muted, #9a8aa8); font-size: 11px; }
+.chart-last { fill: var(--gold, #e8b96a); font-size: 11px; }
+.data-table { display: flex; flex-direction: column; gap: 4px; }
+.data-row {
+  display: grid; grid-template-columns: minmax(110px, 1.6fr) .7fr .8fr .8fr .9fr;
+  gap: 10px; align-items: center; font-size: 13px; padding: 5px 10px;
+  background: rgba(0,0,0,.2); border-radius: 8px;
+}
+.data-row span { font-variant-numeric: tabular-nums; text-align: right; }
+.data-row span:nth-child(1) { text-align: left; }
+.data-row .data-opp { min-width: 0; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.data-row .pos { color: #7ee2a8; }
+.data-row .neg { color: #ff9d9d; }
+details.data-hand { border: 1px solid var(--line, #4a3a55); border-radius: 10px; padding: 8px 12px; margin: 6px 0; scroll-margin-bottom: 96px; }
+details.data-hand summary { cursor: pointer; font-size: 13px; }
+details.data-hand summary b.pos { color: #7ee2a8; }
+details.data-hand summary b.neg { color: #ff9d9d; }
+details.data-hand[open] { background: rgba(0,0,0,.2); }
+.data-acts { font-size: 12px; line-height: 1.8; margin-top: 4px; word-break: normal; overflow-wrap: anywhere; }
+.data-import-label {
+  display: inline-flex; align-items: center; cursor: pointer; position: relative;
+  border: 2px solid var(--line, #4a3a55); border-radius: 12px; padding: 8px 16px;
+  font-size: 14px; color: var(--text, #f0e8f4);
+}
+.data-import-label:hover { border-color: var(--gold, #e8b96a); }
+.seat .stack .seg { white-space: nowrap; margin-right: 6px; }
+/* —— R6 修订：数据弹窗布局（宽屏加宽/内容自滚动/按钮常驻/顶栏降权） —— */
+#data-modal #start-card { max-width: 720px; display: flex; flex-direction: column; }
+#data-body { flex: 1; min-height: 0; overflow-y: auto; max-height: calc(92vh - 150px); padding-right: 4px; }
+#data-body > .mp-row:last-child {
+  position: sticky; bottom: -6px; background: var(--panel);
+  border-top: 1px solid var(--line); margin: 10px -6px -6px; padding: 10px 6px 4px;
+}
+body.data-open #topbar { pointer-events: none; filter: brightness(.5); }
+.data-mode-chip { font-size: 13px; }
+.data-mode-chip.sel { border-color: var(--gold, #ff9ec7); color: var(--gold, #ff9ec7); background: rgba(255,158,199,.12); }
+.roll-num { display: inline-block; animation: rollPulse .8s ease-out 1; }
+@keyframes rollPulse { 0% { filter: brightness(2.2); transform: scale(1.12); } 100% { filter: brightness(1); transform: scale(1); } }
+
+/* ==================== Step 7/9 数据页发现性 ==================== */
+.data-mode-chip:focus-visible, .emote-chip:focus-visible, .mp-tab:focus-visible,
+.ghost:focus-visible, .primary:focus-visible, button:focus-visible {
+  outline: 2px solid var(--gold, #e8b96a); outline-offset: 2px;
+}
+#data-body {
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
+}
+.data-row.data-head { color: var(--gold); font-weight: bold; background: rgba(0,0,0,.35); font-size: 12px; }
+.chart-tick { fill: var(--muted, #9a8aa8); font-size: 10px; }
+
+/* AB 复测修复：390 窄屏下 nowrap 分段撑破座位（页宽 +21px）——窄屏放开换行 */
+@media (max-width: 860px) {
+  .seat .stack .seg { white-space: normal; margin-right: 0; }
+}
+
+/* ---------- 牌桌 v2 ·「夜樱部室」场景层（AI 背景矢量/程序化桌面，见 docs/牌桌重设计_PLAN.md） ---------- */
+#table-wrap::before {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background: url("../assets/table/scene_bg.webp") center / cover no-repeat;
+  filter: brightness(.62) saturate(1.08);
+}
+#table-wrap::after {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background: radial-gradient(ellipse at 50% 58%, transparent 26%, rgba(4,6,14,.55) 78%);
+}
+#table-wrap .petals { z-index: 1; }
+#table-felt, #seats { z-index: 2; }
+@media (min-width: 861px) {
+  #seats { padding: 68px 0 40px; }   /* A4: 让出顶栏/行动栏 */
+}
+#table-felt {
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(90,120,190,.20) 0%, transparent 55%),
+    radial-gradient(ellipse at center, #232c48 0%, #161d33 72%, #10162a 100%);
+  border: 3px solid #a8834b;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 2px rgba(240,220,170,.28),
+    inset 0 0 70px rgba(0,0,0,.6),
+    inset 0 14px 30px rgba(255,235,190,.07),
+    0 18px 46px rgba(0,0,0,.65);
+  overflow: hidden;
+}
+/* 桌面中央樱纹水印（五瓣樱，与牌面同源） */
+#table-felt::before {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 300px; height: 300px; transform: translate(-50%, -50%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='%23a8834b' fill-opacity='0.10'%3E%3Ccircle cx='50' cy='26' r='12'/%3E%3Ccircle cx='71' cy='41' r='12'/%3E%3Ccircle cx='63' cy='66' r='12'/%3E%3Ccircle cx='37' cy='66' r='12'/%3E%3Ccircle cx='29' cy='41' r='12'/%3E%3Ccircle cx='50' cy='46' r='7'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+#table-felt::after {
+  content: ""; position: absolute; inset: 10px;
+  border: 1px solid rgba(255,158,199,.26); border-radius: 999px;
+  pointer-events: none;
+}
+#pot {
+  background: linear-gradient(180deg, rgba(10,13,26,.92), rgba(10,13,26,.78));
+  border: 2px solid rgba(168,131,75,.75);
+  box-shadow: 0 4px 18px rgba(0,0,0,.5), inset 0 0 12px rgba(168,131,75,.12);
+  font-family: inherit;
+  font-size: 18px; letter-spacing: .5px;
+  padding: 6px 22px;
+}
+/* 座位板：暗玻璃 + 金线，行动呼吸沿旧状态类 */
+.seat {
+  background: linear-gradient(180deg, rgba(10,14,26,.88), rgba(10,14,26,.72));
+  border: 2px solid rgba(38,48,79,.9);
+  border-radius: 14px; padding: 9px 12px 8px;
+  backdrop-filter: blur(4px);
+}
+.seat.active {
+  border-color: var(--gold);
+  animation: seatPulse 1.6s ease-in-out infinite;
+}
+@keyframes seatPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(245,201,107,.35); }
+  50% { box-shadow: 0 0 24px rgba(245,201,107,.75); }
+}
+.seat .name { font-size: 14px; font-weight: 700; }
+
+
+/* ---------- 牌桌 v2 · 筹码与行动条 ---------- */
+/* 筹码图标行独立成行（块级 flex 居中）：旧的 inline-flex + vertical-align:-6px 让 22px
+ * 图标垂出 12px 文本行、压到下方底牌行——分行后座位板随内容自然加高，不再叠压 */
+.betstack { display: flex; align-items: center; justify-content: center; margin: 2px 0 1px; }
+.betstack img.chipi {
+  width: 22px; height: 22px; border-radius: 50%;
+  margin-left: -13px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.5));
+}
+.betstack img.chipi:first-child { margin-left: 0; }
+.flychip {
+  width: 18px; height: 18px;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.55));
+}
+#pot::before {
+  content: ""; display: inline-block; width: 18px; height: 18px;
+  margin-right: 8px; vertical-align: -4px;
+  background: url("../assets/chips/chip_100.png") center/contain no-repeat;
+}
+/* —— 行动条两态化（美术布局重规划 §2.2 / §6-1）——
+ * 三键主次：弃牌=窄·透明底红字细边 / 过牌跟注=描边绿字 / 加注=flex:1 实心樱→金渐变粗体宽主视觉。
+ * 选择器用 button.fold/.call/.raise（0,1,1）压过 theme-night-sakura.css 的同键级颜色规则
+ * （主题把 --gold 重定义为樱粉 #ff9ec7，若被它压住，渐变底上会出现粉字配粉底不可读）。 */
+#action-controls button {
+  height: 52px; min-height: 52px; padding: 0 10px;
+  font-size: 15px; font-weight: bold; border-radius: 12px; border-width: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;   /* 超长跟注文案截断，不撑破单行 */
+  background: linear-gradient(180deg, rgba(20,26,48,.92), rgba(12,16,32,.92));
+  transition: transform .15s, box-shadow .15s;
+}
+#action-controls button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,.45);
+}
+#action-controls button:disabled { opacity: .35; }
+#action-controls button.fold {
+  flex: 0 0 88px; background: transparent;
+  border: 1.5px solid var(--red); color: #ff9d9d;
+}
+#action-controls button.call {
+  flex: 0 1 auto; min-width: 110px; max-width: 220px; background: transparent;
+  border: 2px solid var(--green); color: #9fe0bd;
+}
+#action-controls button.raise {
+  flex: 1 1 auto; min-width: 140px; border: none; color: #2b1520;
+  background: linear-gradient(135deg, var(--gold, #ff9ec7), var(--winner-color, #f5c96b));   /* 樱粉→金：唯一强调渐变 */
+}
+/* ▾调注：展开/收起下注调整浮层的副钮（44px，不与三键抢层级） */
+button#raise-tune {
+  height: 44px; min-height: 44px; padding: 0 12px;
+  font-size: 13px; font-weight: normal; color: var(--muted);
+  background: linear-gradient(180deg, rgba(20,26,48,.92), rgba(12,16,32,.92));
+}
+#actionbar.raise-open button#raise-tune { color: var(--gold); border-color: var(--gold); }
+/* 下注调整面板：默认收起（display:none 不占布局空间）；.raise-open 时浮在行动条上方。
+   raise-open 挂 #actionbar：横屏（文档流 relative）与竖屏（fixed）它都是定位锚点。 */
+#raise-box {
+  position: absolute; bottom: 100%; left: 0; right: 0; z-index: 46;
+  display: none; align-items: center; gap: 12px; flex-wrap: nowrap;
+  padding: 10px 14px; margin-bottom: 8px;
+  background: rgba(10, 14, 28, .82);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, .5);
+}
+#actionbar.raise-open #raise-box { display: flex; }
+/* 展开态把整条行动条叠层抬到表情条之上：≤860 档 #actionbar 是 fixed z-index:40（横屏矮窗档
+   relative+同 40 同病），自成叠层上下文后面板的 z46 被困其中，根层级 40<45 输给 #emote-strip(45)
+   的浮标/chips、右端快捷注被压住拦点——抬父级到 47 根治（仍低于顶栏 60/结算遮罩 50） */
+#actionbar.raise-open { z-index: 47; }
+/* 滑条定宽不被压缩（修 v0.3 flex:1 压到 90px 的老 bug）：flex:none + min() 弹性 */
+#raise-slider { flex: none; width: min(320px, 56vw); accent-color: var(--gold); }
+/* 快捷注：单行横排不换行，超宽横向滚动；chip 36px pill */
+#presets {
+  flex: 1 1 auto; min-width: 0; display: flex; gap: 6px;
+  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin;
+}
+#presets button {
+  flex: none; height: 36px; min-height: 36px; padding: 0 12px;
+  font-size: 12px; font-weight: normal; letter-spacing: .5px; border-radius: 999px;
+  background: rgba(12,16,32,.7); border: 1px solid var(--line);
+  color: var(--muted);
+}
+#presets button:hover { color: var(--gold); border-color: var(--gold); }
+
+/* ---------- 手机/折叠屏紧凑档：座位板缩排，防压叠 ---------- */
+@media (max-width: 560px) {
+  .seat { width: 108px; padding: 5px 6px 4px; border-radius: 10px; }
+  .seat .name { font-size: 12px; }   /* 座位可读性 11→12px 底线（覆盖 ≤560 档） */
+  .seat .stack { font-size: 12px; }  /* 同 12px 底线（原 10px） */
+  .seat .stack .seg { white-space: normal; }
+  .portrait .pt-bust { width: 44px !important; height: 44px !important; }
+  .portrait .pt-bust img, .portrait .pt-bust .pt { max-height: 44px; }
+  .card { width: 42px; height: 60px; border-radius: 5px; }
+  .card.small { width: 46px; height: 64px; }
+  .seat.me .card.small { width: 60px; height: 84px; margin-top: -10px; }
+  #board .card { width: 40px; height: 56px; }
+  #pot { font-size: 15px; padding: 4px 14px; }
+  #table-felt { border-width: 2px; }
+  #topbar { flex-wrap: nowrap; overflow-x: auto; }
+  #actionbar { padding: 8px 10px; min-height: 0; gap: 8px; }
+  #action-controls { gap: 4px; }
+  #action-controls button { font-size: 13px; padding: 0 6px; border-radius: 10px; }
+  /* 极窄档三键再收窄（最小宽度和 296px < 390 视口内宽 366px，杜绝横向溢出；
+     选择器带 button. 以压过 v2 段同名 0,1,1 规则） */
+  #action-controls button.fold { flex-basis: 56px; }
+  #action-controls button.call { min-width: 80px; max-width: 160px; }
+  #action-controls button.raise { min-width: 88px; }
+  button#raise-tune { padding: 0 6px; font-size: 12px; }
+  #presets button { font-size: 11px; padding: 0 8px; }
+}
+
+/* ---------- 牌桌 v2 · ≤380 极限窄档（T4 座位层崩坏修复） ---------- */
+@media (max-width: 380px) {
+  .seat { width: 88px; padding: 4px 4px 3px; border-radius: 9px; }   /* 横向内边距 6→4px：给 12px 文字让位 */
+  .seat .name { font-size: 12px; }   /* 座位可读性 12px 底线（原 10px） */
+  .seat .stack { font-size: 12px; }  /* 同 12px 底线（原 9px） */
+  .seat .stack .betstack img.chipi { width: 16px; height: 16px; margin-left: -10px; }
+  .portrait .pt-bust { width: 38px !important; height: 38px !important; }
+  .portrait .pt-bust img, .portrait .pt-bust .pt { max-height: 38px; }
+  .card { width: 34px; height: 48px; }
+  .card.small { width: 38px; height: 53px; }
+  .seat.me .card.small { width: 48px; height: 67px; margin-top: -8px; }
+  #board .card { width: 31px; height: 44px; gap: 4px; }
+  #board { gap: 4px; }
+  #pot { font-size: 13px; padding: 3px 10px; }
+}
+/* 公共牌与底池提到座位层之上：280 宽河牌圈不被座位遮死 */
+#board { z-index: 5; }
+#pot { z-index: 5; }
+#seats { z-index: 2; }
+
+/* ---------- P1-1: 数据弹窗让出顶部 HUD（390 标题压碎） ---------- */
+@media (max-width: 560px) {
+  #data-modal { padding-top: 96px; }
+}
+
+/* ---------- P1-3: 长结算内滚 + 按钮常驻 ---------- */
+#overlay-card { max-height: 92vh; display: flex; flex-direction: column; }
+#overlay-body { overflow-y: auto; min-height: 0; }
+
+/* 层叠 v3(用户实锤'还是看不到牌', elementFromPoint 命中 felt):
+ * 座位(含玩家底牌)必须浮于呢面桌之上—— 物理语义: 玩家的牌放桌面上。
+ * board/pot 公共信息层保持最高(felt z3 时代它随 felt 压 seats, 现 seats z4>
+ * felt, board/pot 需独立提升防座位边角遮牌) */
+#seats { z-index: 4; }
+#board, #pot { z-index: 6; }
+#log .act.note { padding-left: 15px; opacity: .8; font-size: 11.5px; color: #9aa6c8; }
+/* B4: 面板中性底(60-30-10 的 30%), 文字不再裸压场景图 */
+#side .panel {
+  background: rgba(18, 23, 43, .72);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--line, #26304f);
+  border-radius: 12px;
+}
+
+/* ==================== 手游适配层（2026-10-02 全面移动审查） ==================== */
+/* 触屏基础：去双击缩放延迟+点击高亮；限制下拉橡皮筋 */
+html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+body { overscroll-behavior-y: contain; }
+/* 刘海/挖孔安全区（viewport-fit=cover）——补左右 inset（§5：横屏挖孔在侧边） */
+#topbar {
+  padding-top: calc(10px + env(safe-area-inset-top));
+  padding-left: calc(18px + env(safe-area-inset-left));
+  padding-right: calc(18px + env(safe-area-inset-right));
+}
+#actionbar {
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  padding-left: calc(14px + env(safe-area-inset-left));
+  padding-right: calc(14px + env(safe-area-inset-right));
+}
+/* 小屏花瓣减半：砍 6 个常驻动画层，低端机 GPU 止损 */
+@media (max-width: 860px) { .petals i:nth-child(n+7) { display: none; } }
+
+/* ---------- 横屏矮视口（手机横屏 ~740×360；APK 已锁 sensorLandscape） ----------
+ * 推翻 ≤860 竖屏块的纵向滚动布局：回桌面式三段流(顶栏/主区/操作栏)，
+ * 侧栏恢复右列只留教练+日志，牌桌占满剩余宽高 */
+@media (orientation: landscape) and (max-height: 650px) {
+  body { overflow: hidden; height: 100%; min-height: 0; }
+  main { flex-direction: row !important; padding-bottom: 0 !important; }
+  #table-wrap { flex: 1 1 auto; height: auto !important; min-height: 0 !important; }
+  #table-felt { width: 56%; height: 90%; }
+  #side { width: 212px; border-left: 1px solid var(--line); border-top: none; }
+  #portrait-panel { display: none; }          /* 横屏矮窗：立绘面板让位教练+日志 */
+  #coach h3, #logpanel h3 { font-size: 12px; margin-bottom: 4px; }
+  .panel { padding: 8px 10px; }
+  #coach-body .row { font-size: 10.5px; }
+  #log { max-height: none; font-size: 11px; line-height: 1.5; }
+  /* 操作栏回文档流（fixed 在矮窗会盖住桌面下半区）。
+     relative 与 static 同为文档流布局，但兼作 #raise-box 浮层的绝对定位锚点（两态化） */
+  #actionbar { position: relative !important; flex-wrap: nowrap; padding: 8px 12px; min-height: 0; gap: 10px; }
+  #action-controls { gap: 8px; }
+  #action-controls button { font-size: 14px; padding: 0 8px; }
+  #topbar { flex-wrap: nowrap; padding: 4px 12px; }
+  #emote-strip { bottom: calc(var(--actionbar-h, 62px) + 10px); }
+  /* 紧凑座位档（=≤560 宽档同规格，横屏窗宽够但高紧） */
+  .seat { width: 108px; padding: 5px 6px 4px; border-radius: 10px; }
+  .seat .name { font-size: 12px; }   /* 座位可读性 11→12px 底线（横屏矮窗档，末位级联生效） */
+  .seat .stack { font-size: 12px; }  /* 同 12px 底线（原 10px） */
+  .portrait .pt-bust { width: 44px !important; height: 44px !important; }
+  .portrait .pt-bust img, .portrait .pt-bust .pt { max-height: 44px; }
+  .card { width: 42px; height: 60px; }
+  .card.small { width: 46px; height: 64px; }
+  .seat.me .card.small { width: 58px; height: 82px; }
+  #board .card { width: 40px; height: 56px; }
+  #board { gap: 6px; }
+  #pot { font-size: 14px; padding: 3px 12px; }
+  #overlay-card { max-height: 92vh; }
+  #data-modal { padding-top: 56px; }
+}
+
+/* ---------- 安全区左右补丁（末位级联，2026-10-03 座位可读性与触控杂项） ----------
+ * 为什么放文件末位：≤860/≤560/横屏矮窗各档对 #topbar/#actionbar 的 padding 简写
+ * 晚于上方「手游适配层」的安全区块，简写整体重置四向会把左右 inset 一并清掉——
+ * 横屏矮窗（740×360，挖孔正在侧边）尤其如此。此处按各档原基准值重建左右（+inset），
+ * 无挖孔设备 env()=0 落回原值，视觉零变化；top/bottom 安全区仍由上方区块/各档简写管。 */
+@media (max-width: 860px) {
+  #topbar { padding-left: calc(12px + env(safe-area-inset-left, 0px)); padding-right: calc(12px + env(safe-area-inset-right, 0px)); }
+  #actionbar { padding-left: calc(10px + env(safe-area-inset-left, 0px)); padding-right: calc(10px + env(safe-area-inset-right, 0px)); }
+}
+@media (orientation: landscape) and (max-height: 650px) {
+  #topbar { padding-left: calc(12px + env(safe-area-inset-left, 0px)); padding-right: calc(12px + env(safe-area-inset-right, 0px)); }
+  #actionbar { padding-left: calc(12px + env(safe-area-inset-left, 0px)); padding-right: calc(12px + env(safe-area-inset-right, 0px)); }
+}
+/* #lobby-topbar 的样式在 landing.css（晚于本文件加载），同特异性必被反压——
+ * body 前缀抬到 1-0-1 全档胜出（landing 各档基准：桌面 24 / 窄屏 14 / 横屏矮窗 16） */
+body #lobby-topbar {
+  padding-left: calc(24px + env(safe-area-inset-left, 0px));
+  padding-right: calc(24px + env(safe-area-inset-right, 0px));
+}
+@media (max-width: 860px) {
+  body #lobby-topbar { padding-left: calc(14px + env(safe-area-inset-left, 0px)); padding-right: calc(14px + env(safe-area-inset-right, 0px)); }
+}
+@media (orientation: landscape) and (max-height: 650px) {
+  body #lobby-topbar { padding-left: calc(16px + env(safe-area-inset-left, 0px)); padding-right: calc(16px + env(safe-area-inset-right, 0px)); }
+}
+
+/* ---------- 数据页横屏矮窗适配（2026-10-03 · 美术布局重规划 P0-3 第一刀） ----------
+ * 现状 740×360：居中卡片弹窗 #data-body 可视仅 ~135px，内容 1605px 滚 11.9 屏，
+ * 图表 SVG height:auto 被窄容器压扁（PLAN §0a-⑧）。
+ * 方向（PLAN §6-3 横屏全屏抽屉）：本块只作用 landscape≤560 档，竖屏(≤860)/桌面不动。 */
+@media (orientation: landscape) and (max-height: 650px) {
+  /* ① 全屏化：遮罩基线已 position:fixed inset:0，去掉居中收缩让卡片铺满；
+     顶栏让位 padding-top:56px 沿用（上方矮窗块已定，body.data-open 时顶栏降权） */
+  #data-modal { align-items: stretch; justify-content: flex-start; padding: 56px 0 0; }
+  #data-modal #start-card {
+    /* ≤860 档给 #start-card 的 margin:16px（style.css:322）会吃掉全屏 stretch 的高：
+       740×360 下卡片只剩 272px——全屏抽屉态显式归零 */
+    margin: 0;
+    max-width: none; width: 100%; max-height: none;
+    border-radius: 0; border-left: none; border-right: none;
+    padding: 8px 0 10px;
+    padding-left: calc(16px + env(safe-area-inset-left, 0px));   /* §5：横屏挖孔在侧边 */
+    padding-right: calc(16px + env(safe-area-inset-right, 0px));
+  }
+  #data-modal #start-card h1 { font-size: 20px; margin-bottom: 6px; }
+  #data-modal #start-card #btn-data-back { margin-top: 8px; }   /* .big 默认 18px，矮窗回收 10px 可视高 */
+  /* 解除 92vh-150 截断：全屏卡内 flex:1 自撑，#data-body 内滚 */
+  #data-body { max-height: none; }
+  #data-body h4 { margin: 8px 0 4px; }
+  /* ② KPI 卡横屏收 3 列（auto-fill，宽窗自动到 4 列）+ 内边距收紧 */
+  .data-cards { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 6px 0 2px; }
+  .data-stat { padding: 8px 10px; }
+  .data-stat b { font-size: 18px; }
+  /* ③ 图表高度定死 170px：位图由 data.js drawChart 按容器实尺寸重建，不再压扁 */
+  #data-body canvas.data-chart { height: 170px; }
+}
+
+/* 数据页滚动提示：横屏首屏只露图表，玩家需知道下面还有统计卡 */
+#data-scroll-hint {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  padding: 22px 0 8px; text-align: center;
+  background: linear-gradient(180deg, transparent, var(--panel) 80%);
+  font-size: 11px; color: var(--muted); letter-spacing: 1px;
+  pointer-events: none; transition: opacity .3s;
+}
+#data-scroll-hint.gone { opacity: 0; }
+
+/* ==================== 外部评审报告施工（2026-10-03 WorkBuddy） ==================== */
+/* P0-2: 教练建议键脉冲光圈——指向答案不夺主次 */
+#action-controls button.coach-glow {
+  outline: 2px solid var(--green, #7fd48f);
+  outline-offset: 2px;
+  animation: coachGlow 1.2s ease-in-out infinite;
+}
+@keyframes coachGlow {
+  0%, 100% { box-shadow: 0 0 4px rgba(127, 212, 143, .45); }
+  50% { box-shadow: 0 0 16px rgba(127, 212, 143, .95); }
+}
+/* P1-3: 触控下限——预设档与开关命中区 */
+#presets button { min-height: 44px; }
+#topbar .toggle { padding: 8px 6px; }         /* 复选框视觉小但命中区扩到 44 量级 */
+#topbar .toggle input { width: 18px; height: 18px; }
+/* P1-3: micro 字号下限 */
+.seat .name .bot-tag { font-size: 10px; }
+.seat .pos { font-size: 10px; }
+/* P1-2: 顶栏文本不溢出（横屏矮窗档已有压缩, 此处兜底通用档） */
+#hand-info { min-width: 0; flex-shrink: 1; }
+/* P1-5: 大厅名牌不被立绘盖字 */
+#stage-plate { z-index: 3; }
+.landing-foot { font-size: 12px; }
+/* 650 断点座位·受控flex竖条(v2 修grid溢出: 牌曾溢出座位压进行动条)：
+ * 圆头像38(cover-top修裁歪) -> 名字/筹码 -> 牌行(高度给足) -> 动作词 */
+@media (orientation: landscape) and (max-height: 650px) {
+  .seat { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 6px 3px; width: 132px; }
+  .seat .portrait { order: -1; flex: none; width: 44px !important; height: 44px !important; overflow: hidden; border-radius: 50%; }
+  .seat .portrait .pt-bust { width: 44px !important; height: 44px !important; border-radius: 50% !important; }  /* 特异性0,3,0: 恒压 characters.css 的 66px */
+  .seat .portrait .pt-bust img, .seat .portrait .pt-bust .pt {
+    width: 100% !important; height: 100% !important; max-height: none;
+    object-fit: cover; object-position: top center;   /* 裁头部不歪脸 */
+  }
+  .portrait .pt-glow, .portrait .pt-eye { display: none; }   /* 圆形小头像下动画层无意义且易错位 */
+  .seat .name { font-size: 12px; white-space: nowrap; overflow: hidden; max-width: 100%; }
+  .seat .stack { font-size: 12px; margin: 0; white-space: nowrap; }
+  .seat .stack .betstack { display: none; }
+  .seat .cards { order: 5; min-height: 80px; gap: 4px; justify-content: center; }
+  .card.small { width: 46px; height: 64px; }
+  .seat.me .card.small { width: 56px; height: 78px; margin-top: 0; }
+  #board .card { width: 52px; height: 72px; }
+  #pot { font-size: 16px; }
+  .seat .action { order: 6; min-height: 0; margin-top: 1px; font-size: 10.5px; }
+}
+/* 竖屏窄档: 防换行+紧凑高度(座位零重叠存量修复, 高 ≤190 vs 上下排间距 218) */
+@media (max-width: 860px) {
+  .seat .name, .seat .stack { white-space: nowrap; overflow: hidden; }
+  .seat { width: 112px; padding: 4px 5px 3px; }
+  .portrait .pt-bust { width: 36px !important; height: 36px !important; }
+  .portrait .pt-bust img, .portrait .pt-bust .pt { max-height: 36px; }
+  .seat .cards { min-height: 42px; gap: 3px; }
+  .card.small { width: 36px; height: 50px; }
+  .seat.me .card.small { width: 46px; height: 64px; }
+  .seat .stack .betstack img.chipi { width: 15px; height: 15px; }
+  .seat .action { min-height: 0; }
+}
+
+/* 手机横屏 ≤450h: 牌回落紧凑档(451-650 的放大值不适用于 360 高) */
+@media (orientation: landscape) and (max-height: 450px) {
+  #board .card { width: 40px; height: 56px; }
+  .card.small { width: 38px; height: 53px; }
+  .seat.me .card.small { width: 46px; height: 64px; }
+}
+
+.ver { font-size: 10px; color: var(--muted); opacity: .7; font-variant-numeric: tabular-nums; }
+
+/* 手机横屏 ≤450h: 座位横排小卡(行1=头像+名+右上角筹码, 行2=牌, 高112定值) */
+@media (orientation: landscape) and (max-height: 450px) {
+  .seat { width: 122px; height: 112px; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0; padding: 3px 5px; }
+  .seat .portrait { width: 32px !important; height: 32px !important; flex: none; }
+  .seat .portrait .pt-bust { width: 32px !important; height: 32px !important; }
+  .seat .name { font-size: 12px; white-space: nowrap; overflow: hidden; max-width: 60px; flex: 1; text-align: left; margin-left: 4px; }
+  .seat .stack { position: absolute; right: 5px; top: 4px; font-size: 11px; margin: 0; }
+  .seat .cards { width: 100%; order: 5; min-height: 56px; gap: 3px; }
+  .card.small { width: 38px; height: 52px; }
+  .seat.me .card.small { width: 44px; height: 60px; }
+  #board .card { width: 42px; height: 58px; }
+  .seat .action { display: none; }
+}
+}
